@@ -15,7 +15,7 @@ else
 server1.example.com, anotherdomain.com)"
 	read DESTINATIONS
 
-	if [[ $DESTINATIONS -ne "" ]]; then
+	if [[ ! $DESTINATIONS = "" ]]; then
 		DESTINATIONS=$DESTINATIONS','
 	fi
 

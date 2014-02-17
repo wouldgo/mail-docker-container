@@ -1,1 +1,3 @@
+mail-folders/
+postfix-conf/
 run-mail-server.sh
