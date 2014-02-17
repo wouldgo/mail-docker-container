@@ -4,8 +4,6 @@ MAINTAINER Dario Andrei <wouldgo84@gmail.com>
 RUN apt-get update
 RUN apt-get upgrade -y
 
-RUN useradd -u 9874 mail-user
-
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install dovecot-imapd dovecot-pop3d postfix
 
 RUN mv /usr/share/dovecot/protocols.d/pop3d.protocol /usr/share/dovecot/protocols.d/pop3d.disabledprotocol
