@@ -1,2 +1,2 @@
-dovecot-docker-container
+mail-docker-container
 ======================
