@@ -4,20 +4,45 @@ MAINTAINER Dario Andrei <wouldgo84@gmail.com>
 RUN apt-get update
 RUN apt-get upgrade -y
 
-RUN useradd -u 9874 mail-user
-RUN mkdir -p /opt/confs
-RUN chown -Rfv mail-user:mail-user /opt/confs
+RUN groupadd -g 9874 mail-user
+RUN useradd -m -u 9874 -g 9874 -s /bin/bash mail-user
 
-RUN apt-get -y install rsyslog dovecot-imapd dovecot-pop3d postfix libsasl2-2 sasl2-bin libsasl2-modules
+RUN apt-get -y install rsyslog dovecot-common dovecot-imapd dovecot-pop3d postfix libsasl2-2 sasl2-bin libsasl2-modules
+
+RUN mkdir -p /opt/conf
+RUN mkdir -p /opt/mails/%HOSTNAME_STRING%
+
+RUN touch /opt/conf/vhosts
+RUN touch /opt/conf/vmaps
+RUN touch /opt/conf/virtual
+
+RUN echo '%HOSTNAME_STRING%' >> /opt/conf/vhosts
+RUN echo 'info@%HOSTNAME_STRING%  %HOSTNAME_STRING%/info/' >> /opt/conf/vmaps
+RUN postmap /opt/conf/vmaps
+
+RUN echo 'postmaster@%HOSTNAME_STRING%  postmaster' >> /opt/conf/virtual
+RUN postmap /opt/conf/virtual
+
+RUN chown -Rfv mail-user:mail-user /opt
+RUN chmod -Rfv g+rwx /opt/mails
+
+RUN postconf -e 'virtual_mailbox_domains = /opt/conf/vhosts'
+RUN postconf -e 'virtual_mailbox_base = /opt/mails'
+RUN postconf -e 'virtual_mailbox_maps = hash:/opt/conf/vmaps'
+RUN postconf -e 'virtual_alias_maps = hash:/opt/conf/virtual'
+RUN postconf -e 'virtual_minimum_uid = 1000'
+RUN postconf -e 'virtual_uid_maps = static:9874'
+RUN postconf -e 'virtual_gid_maps = static:9874'
 
 RUN postconf -e 'alias_database = hash:/opt/confs/aliases'
 RUN postconf -e 'alias_maps = hash:/opt/confs/aliases'
 
-RUN postconf -e 'myhostname = %HOSTNAME_STRING%'
-RUN postconf -e 'mydestination = %HOSTNAME_STRING%, %DESTINATIONS_STRING% localhost.localdomain, localhost'
-RUN postconf -e 'myorigin = $mydomain'
+RUN postconf -e 'myhostname = localhost'
+RUN postconf -e 'myorigin = $myhostname'
+RUN postconf -e 'mydestination = '
 RUN postconf -e 'home_mailbox = Maildir/'
 RUN postconf -e 'mailbox_command ='
+
 RUN postconf -e 'smtpd_sasl_local_domain ='
 RUN postconf -e 'smtpd_sasl_auth_enable = yes'
 RUN postconf -e 'smtpd_sasl_security_options = noanonymous'
@@ -63,15 +88,17 @@ RUN echo 'OPTIONS="-c -m /var/spool/postfix/var/run/saslauthd"'
 RUN dpkg-statoverride --force --update --add root sasl 755 /var/spool/postfix/var/run/saslauthd
 
 RUN mv /usr/share/dovecot/protocols.d/pop3d.protocol /usr/share/dovecot/protocols.d/pop3d.disabledprotocol
-RUN sed -i -e"s/^#mail_location\ =.*/mail_location\ =\ maildir:~\/Maildir/" /etc/dovecot/conf.d/10-mail.conf
+RUN sed -i -e"s/^#mail_location\ =.*/mail_location\ =\ maildir:\/opt\/mails\/%d\/%n/g" /etc/dovecot/conf.d/10-mail.conf
 
-
-RUN sed -i -re"s/^protocol imap \{$/protocol imap \{\r\n  listen = *:143\r\n  ssl_listen = *:993/g" /etc/dovecot/conf.d/20-imap.conf
-
+RUN sed -i -re"s/(^\s*)#port\s*=\s*143.*$/\1port = 143/g" /etc/dovecot/conf.d/10-master.conf
+RUN sed -i -re"s/(^\s*)#port\s*=\s*993.*$/\1port = 993/g" /etc/dovecot/conf.d/10-master.conf
+RUN sed -i -re"s/^.*#ssl\s*=\s*yes.*$/ssl = yes/g" /etc/dovecot/conf.d/10-master.conf
+RUN sed -i -re"s/^.*ssl_cert\s*=.*/ssl_cert = \/etc\/ssl\/certs\/ssl-cert-snakeoil.pem/g" /etc/dovecot/conf.d/10-ssl.conf
+RUN sed -i -re"s/^.*ssl_key\s*=.*/ssl_key = \/etc\/ssl\/private\/ssl-cert-snakeoil.key/g" /etc/dovecot/conf.d/10-ssl.conf
 
 RUN ln -s /proc/mounts /etc/mtab
 
 EXPOSE 25 143
-VOLUME ["/opt/confs"]
+VOLUME ["/opt/conf", "/opt/mails"]
 
-CMD ["sh", "-c", "/etc/init.d/rsyslog start && /etc/init.d/saslauthd start && /etc/init.d/postfix start && /etc/init.d/dovecot start && tail -F /var/log/mail.info" ]
+CMD ["sh", "-c", "/etc/init.d/rsyslog start && /etc/init.d/saslauthd start && /etc/init.d/postfix start && /etc/init.d/dovecot start && tail -f /var/log/mail.info" ]

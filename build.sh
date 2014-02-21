@@ -6,6 +6,7 @@ if [[ $EUID -ne 0 ]]; then
 else
 
   mkdir conf
+  mkdir mails
 
   useradd \
   --shell /bin/bash \
@@ -18,9 +19,9 @@ else
   echo "Give the hostname"
   read HOSTNAME
 
-  echo "Give the other destinations (comma separated like:
-server1.example.com, anotherdomain.com)"
-  read DESTINATIONS
+#   echo "Give the other destinations (comma separated like:
+# server1.example.com, anotherdomain.com)"
+#   read DESTINATIONS
 
   echo "Give the state"
   read STATE
@@ -34,16 +35,16 @@ server1.example.com, anotherdomain.com)"
   echo "Give me the organization"
   read ORG
 
-  if [[ ! $DESTINATIONS = "" ]]; then
-    DESTINATIONS=$DESTINATIONS','
-  fi
+  # if [[ ! $DESTINATIONS = "" ]]; then
+  #   DESTINATIONS=$DESTINATIONS','
+  # fi
 
   sed -i -re"s/%HOSTNAME_STRING%/$HOSTNAME/g" Dockerfile && \
-  sed -i -re"s/%DESTINATIONS_STRING%/$DESTINATIONS/g" Dockerfile && \
+  # sed -i -re"s/%DESTINATIONS_STRING%/$DESTINATIONS/g" Dockerfile && \
   sed -i -re"s/%STATE_STRING%/$STATE/g" Dockerfile && \
   sed -i -re"s/%PROVINCE_STRING%/$PROVINCE/g" Dockerfile && \
   sed -i -re"s/%CITY_STRING%/$CITY/g" Dockerfile && \
   sed -i -re"s/%ORG_STRING%/$ORG/g" Dockerfile && \
-  chown -Rfv mail-user:mail-user conf/ && \
-  docker build -rm=true -t wouldgo/mail .
+  chown -Rfv mail-user:mail-user conf/ mails/ && \
+  docker build -t wouldgo/mail .
 fi

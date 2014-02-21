@@ -6,7 +6,8 @@ docker run \
 -name mailer \
 -d \
 -h mailer \
--p 127.0.0.1:25:25 \
--p 127.0.0.1:143:143 \
--v $PWD/conf:/opt/confs \
+-p 0.0.0.0:25:25 \
+-p 0.0.0.0:143:143 \
+-v $PWD/conf:/opt/conf \
+-v $PWD/mails:/opt/mails \
 wouldgo/mail
