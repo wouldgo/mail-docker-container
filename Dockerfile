@@ -88,7 +88,7 @@ RUN echo 'OPTIONS="-c -m /var/spool/postfix/var/run/saslauthd"'
 RUN dpkg-statoverride --force --update --add root sasl 755 /var/spool/postfix/var/run/saslauthd
 
 RUN mv /usr/share/dovecot/protocols.d/pop3d.protocol /usr/share/dovecot/protocols.d/pop3d.disabledprotocol
-RUN sed -i -e"s/^#mail_location\ =.*/mail_location\ =\ maildir:\/opt\/mails\/%d\/%n/g" /etc/dovecot/conf.d/10-mail.conf
+RUN sed -i -e"s/^mail_location\ =.*/mail_location\ =\ maildir:\/opt\/mails\/%d\/%n/g" /etc/dovecot/conf.d/10-mail.conf
 
 RUN sed -i -re"s/(^\s*)#port\s*=\s*143.*$/\1port = 143/g" /etc/dovecot/conf.d/10-master.conf
 RUN sed -i -re"s/(^\s*)#port\s*=\s*993.*$/\1port = 993/g" /etc/dovecot/conf.d/10-master.conf
