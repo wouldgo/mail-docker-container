@@ -5,46 +5,25 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 else
 
-  mkdir conf
-  mkdir mails
+  apt-get install -y pwgen mysql-client
 
-  useradd \
-  --shell /bin/bash \
-  --home-dir /home/mail-user \
-  --no-create-home \
-  --uid 9874 \
-  --comment "mail docker container user" \
-  mail-user || { echo "User for mail alredy present"; }
+  MAILUSER_PSW=$(pwgen -s 30 1)
+  TAG="wouldgo/mysql"
+  CONTAINER_ID=$(docker ps | grep $TAG | awk '{print $1}')
+  IP=$(docker inspect $CONTAINER_ID | python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["NetworkSettings"]["IPAddress"]')
 
-  echo "Give the hostname"
-  read HOSTNAME
+  echo "Specify the admin user of mysql server..."
+  read ADMIN
 
-#   echo "Give the other destinations (comma separated like:
-# server1.example.com, anotherdomain.com)"
-#   read DESTINATIONS
+  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" create_mysql_db.sql
+  mysql -u $(echo $ADMIN) -p -h $IP < create_mysql_db.sql
 
-  echo "Give the state"
-  read STATE
+  # Fake populate
+  mysql -u $(echo $ADMIN) -p -h $IP < fake_populate.sql
 
-  echo "Give me the province"
-  read PROVINCE
 
-  echo "Give me the city"
-  read CITY
-
-  echo "Give me the organization"
-  read ORG
-
-  # if [[ ! $DESTINATIONS = "" ]]; then
-  #   DESTINATIONS=$DESTINATIONS','
-  # fi
-
-  sed -i -re"s/%HOSTNAME_STRING%/$HOSTNAME/g" Dockerfile && \
-  # sed -i -re"s/%DESTINATIONS_STRING%/$DESTINATIONS/g" Dockerfile && \
-  sed -i -re"s/%STATE_STRING%/$STATE/g" Dockerfile && \
-  sed -i -re"s/%PROVINCE_STRING%/$PROVINCE/g" Dockerfile && \
-  sed -i -re"s/%CITY_STRING%/$CITY/g" Dockerfile && \
-  sed -i -re"s/%ORG_STRING%/$ORG/g" Dockerfile && \
-  chown -Rfv mail-user:mail-user conf/ mails/ && \
   docker build -t wouldgo/mail .
+  echo "
+
+  This is the mailuser password: $MAILUSER_PSW (SAVE IT!)"
 fi
