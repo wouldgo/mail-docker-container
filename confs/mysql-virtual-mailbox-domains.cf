@@ -1,0 +1,5 @@
+user = mailuser
+password = %MAILUSER_PSW%
+hosts = %MYSQL_IP%
+dbname = mailserver
+query = SELECT 1 FROM virtual_domains WHERE name='%s'
