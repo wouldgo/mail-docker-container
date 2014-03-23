@@ -4,7 +4,7 @@ MAINTAINER Dario Andrei <wouldgo84@gmail.com>
 RUN apt-get update && apt-get upgrade -y
 
 RUN apt-get --purge remove 'exim4*'
-RUN apt-get install -y rsyslog postfix postfix-mysql swaks dovecot-mysql dovecot-pop3d dovecot-imapd dovecot-managesieved libpcre3
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog postfix postfix-mysql swaks dovecot-mysql dovecot-pop3d dovecot-imapd dovecot-managesieved libpcre3
 
 ADD confs/mysql-virtual-mailbox-domains.cf /etc/postfix/mysql-virtual-mailbox-domains.cf
 ADD confs/mysql-virtual-mailbox-maps.cf /etc/postfix/mysql-virtual-mailbox-maps.cf
@@ -23,11 +23,12 @@ RUN sed -i -re"s/\s*mail_location\s*=.+/mail_location = maildir:\/var\/vmail\/%d
 RUN perl -0777 -i.original -pe 's/# Postfix smtp-auth\n.*#unix_listener \/var\/spool\/postfix\/private\/auth {\n.*#  mode = 0666\n.*#}\n/# Postfix smtp-auth\n  unix_listener \/var\/spool\/postfix\/private\/auth {\n    mode = 0660\n    user = postfix\n    group = postfix\n  }\n/igs' /etc/dovecot/conf.d/10-master.conf
 
 
-RUN sed -i -e"s/  #mail_plugins = \$mail_plugins/  mail_plugins = \$mail_plugins sieve/g" /etc/dovecot/conf.d/15-lda.conf
+RUN sed -i -e"s/  #mail_plugins = \$mail_plugins/  mail_plugins = \$mail_plugins sieve/g" /etc/dovecot/conf.d/15-lda.conf && sed -i -e "s/#postmaster_address =/postmaster_address = postmaster@domainA.com/g" /etc/dovecot/conf.d/15-lda.conf
 RUN cat /tmp/dovecot-sql.conf.ext >> /etc/dovecot/dovecot-sql.conf.ext
 
 RUN chgrp vmail /etc/dovecot/dovecot.conf && chmod g+r /etc/dovecot/dovecot.conf && chown root:root /etc/dovecot/dovecot-sql.conf.ext && chmod go= /etc/dovecot/dovecot-sql.conf.ext
 
+RUN echo "dovecot   unix  -       n       n       -       -       pipe\r\n  flags=DRhu user=vmail:vmail argv=/usr/lib/dovecot/dovecot-lda -f ${sender} -d ${recipient}" >> /etc/postfix/master.cf && postconf -e 'virtual_transport=dovecot' && postconf -e 'dovecot_destination_recipient_limit=1'
 
 RUN ln -s /proc/mounts /etc/mtab
 CMD ["sh", "-c", "/etc/init.d/rsyslog start && /etc/init.d/postfix restart && /etc/init.d/dovecot restart && tail -f /var/log/mail.info" ]
