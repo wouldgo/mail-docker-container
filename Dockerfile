@@ -28,7 +28,8 @@ RUN cat /tmp/dovecot-sql.conf.ext >> /etc/dovecot/dovecot-sql.conf.ext
 
 RUN chgrp vmail /etc/dovecot/dovecot.conf && chmod g+r /etc/dovecot/dovecot.conf && chown root:root /etc/dovecot/dovecot-sql.conf.ext && chmod go= /etc/dovecot/dovecot-sql.conf.ext
 
-RUN echo "dovecot   unix  -       n       n       -       -       pipe\r\n  flags=DRhu user=vmail:vmail argv=/usr/lib/dovecot/dovecot-lda -f ${sender} -d ${recipient}" >> /etc/postfix/master.cf && postconf -e 'virtual_transport=dovecot' && postconf -e 'dovecot_destination_recipient_limit=1'
+RUN echo "dovecot   unix  -       n       n       -       -       pipe\r\n  flags=DRhu user=vmail:vmail argv=/usr/lib/dovecot/dovecot-lda -f \${sender} -d \${recipient}" >> /etc/postfix/master.cf && postconf -e 'virtual_transport=dovecot' && postconf -e 'dovecot_destination_recipient_limit=1'
 
+VOLUME ["/var/vmail"]
 RUN ln -s /proc/mounts /etc/mtab
 CMD ["sh", "-c", "/etc/init.d/rsyslog start && /etc/init.d/postfix restart && /etc/init.d/dovecot restart && tail -f /var/log/mail.info" ]
