@@ -1,5 +1,6 @@
 DROP SCHEMA IF EXISTS `mailserver`;
 CREATE SCHEMA `mailserver`;
+GRANT USAGE ON *.* TO 'mailuser'@'%';
 DROP USER 'mailuser'@'%';
 CREATE USER 'mailuser'@'%';
 SET PASSWORD FOR 'mailuser'@'%' = PASSWORD('%MAILUSER_PSW%');
