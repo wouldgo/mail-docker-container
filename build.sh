@@ -10,29 +10,38 @@ else
   MAILUSER_PSW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
   MYSQL_IP=$(docker inspect $(docker ps | grep wouldgo/mysql | awk '{print $1}') | python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["NetworkSettings"]["IPAddress"]')
 
-  echo "Specify the admin user of mysql server..."
+  echo "Specify the admin user for mysql server..."
   read ADMIN
 
-  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/mysql-virtual-mailbox-domains.cf
-  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/mysql-virtual-mailbox-domains.cf
+  echo "Specify the admin password for mysql server..."
+  read -s PASSWORD
 
-  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/mysql-virtual-mailbox-maps.cf
-  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/mysql-virtual-mailbox-maps.cf
+  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/mysql-virtual-mailbox-domains.cf && \
+  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/mysql-virtual-mailbox-domains.cf && \
 
-  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/mysql-virtual-alias-maps.cf
-  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/mysql-virtual-alias-maps.cf
+  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/mysql-virtual-mailbox-maps.cf && \
+  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/mysql-virtual-mailbox-maps.cf && \
 
-  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/mysql-email2email.cf
-  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/mysql-email2email.cf
+  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/mysql-virtual-alias-maps.cf && \
+  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/mysql-virtual-alias-maps.cf && \
 
-  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/dovecot-sql.conf.ext
-  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/dovecot-sql.conf.ext
+  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/mysql-email2email.cf && \
+  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/mysql-email2email.cf && \
 
-  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/create_mysql_db.sql
-  mysql -u $(echo $ADMIN) -p -h $MYSQL_IP < confs/create_mysql_db.sql
+  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/dovecot-sql.conf.ext && \
+  sed -i -re"s/%MYSQL_IP%/$MYSQL_IP/g" confs/dovecot-sql.conf.ext && \
 
-  # Fake populate
-  mysql -u $(echo $ADMIN) -p -h $MYSQL_IP < fake_populate.sql
+  mysqldump -u $(echo $ADMIN) -p$(echo $PASSWORD) -h $MYSQL_IP --no-create-info mailserver virtual_domains virtual_users virtual_aliases > confs/previous_dump.sql && \
 
-  docker build --tag wouldgo/mail .
+  sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" confs/create_mysql_db.sql && \
+  mysql -u $(echo $ADMIN) -p$(echo $PASSWORD) -h $MYSQL_IP < confs/create_mysql_db.sql && \
+  mysql -u $(echo $ADMIN) -p$(echo $PASSWORD) -h $MYSQL_IP --database=mailserver < confs/previous_dump.sql && \
+
+  docker build --tag wouldgo/mail . && \
+
+  echo "confs/mysql-virtual-mailbox-domains.cf" >> .gitignore && \
+  echo "confs/mysql-virtual-mailbox-maps.cf" >> .gitignore && \
+  echo "confs/mysql-virtual-alias-maps.cf" >> .gitignore && \
+  echo "confs/mysql-email2email.cf" >> .gitignore && \
+  echo "confs/dovecot-sql.conf.ext" >> .gitignore
 fi

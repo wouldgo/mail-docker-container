@@ -28,3 +28,6 @@ INSERT INTO `mailserver`.`virtual_aliases` (
 VALUES (
   '1', '1', 'antani@domainA.com', 'user1@domainA.com'
 );
+
+
+#perl -MMIME::Base64 -e 'print encode_base64("user2\@domainA.com\0user2\@domainA.com\0longpw")';

@@ -30,6 +30,9 @@ RUN chgrp vmail /etc/dovecot/dovecot.conf && chmod g+r /etc/dovecot/dovecot.conf
 
 RUN echo "dovecot   unix  -       n       n       -       -       pipe\r\n  flags=DRhu user=vmail:vmail argv=/usr/lib/dovecot/dovecot-lda -f \${sender} -d \${recipient}" >> /etc/postfix/master.cf && postconf -e 'virtual_transport=dovecot' && postconf -e 'dovecot_destination_recipient_limit=1'
 
+RUN postconf -e 'smtpd_sasl_type=dovecot' && postconf -e 'smtpd_sasl_path=private/auth' && postconf -e 'smtpd_sasl_auth_enable=yes' && postconf -e 'smtpd_tls_security_level=may' && postconf -e 'smtpd_tls_auth_only=yes' && postconf -e 'smtpd_tls_cert_file=/etc/dovecot/dovecot.pem' && postconf -e 'smtpd_tls_key_file=/etc/dovecot/private/dovecot.pem' && postconf -e 'smtpd_recipient_restrictions=permit_mynetworks permit_sasl_authenticated reject_unauth_destination' && postconf -e 'mynetworks='
+
 VOLUME ["/var/vmail"]
+EXPOSE 25
 RUN ln -s /proc/mounts /etc/mtab
 CMD ["sh", "-c", "/etc/init.d/rsyslog start && /etc/init.d/postfix restart && /etc/init.d/dovecot restart && tail -f /var/log/mail.info" ]

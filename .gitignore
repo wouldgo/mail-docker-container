@@ -1,3 +1,1 @@
-mail-folders/
-postfix-conf/
-run-mail-server.sh
+confs/previous_dump.sql
