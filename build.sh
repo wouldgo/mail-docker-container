@@ -10,6 +10,8 @@ else
   MAILUSER_PSW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
   MYSQL_IP=$(docker inspect $(docker ps | grep wouldgo/mysql | awk '{print $1}') | python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["NetworkSettings"]["IPAddress"]')
 
+  echo "Mysql ip is $MYSQL_IP" && \
+
   DEFAULT_HOSTNAME=$(hostname) && \
   read -p "Specify the machine hostname [$DEFAULT_HOSTNAME]: " HOSTNAME && \
   HOSTNAME=${HOSTNAME:-$DEFAULT_HOSTNAME} && \
