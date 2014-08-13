@@ -36,6 +36,8 @@ RUN echo "virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-mailbox-dom
 RUN echo "virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf" >> /etc/postfix/main.cf
 RUN echo "virtual_alias_maps = mysql:/etc/postfix/mysql-virtual-alias-maps.cf" >> /etc/postfix/main.cf
 
+RUN echo "myorigin = /etc/mailname" >> /etc/postfix/main.cf
+
 ADD confs/mysql-virtual-mailbox-domains.cf /etc/postfix/mysql-virtual-mailbox-domains.cf
 ADD confs/mysql-virtual-mailbox-maps.cf /etc/postfix/mysql-virtual-mailbox-maps.cf
 ADD confs/mysql-virtual-alias-maps.cf /etc/postfix/mysql-virtual-alias-maps.cf
@@ -59,6 +61,7 @@ RUN echo "protocols = imap lmtp" >> /etc/dovecot/dovecot.conf
 
 RUN sed -i -re"s/mail_location.*/mail_location = maildir:\/var\/mail\/vhosts\/%d\/%n/g" /etc/dovecot/conf.d/10-mail.conf
 RUN sed -i -re"s/#mail_privileged_group.*/mail_privileged_group = mail/g" /etc/dovecot/conf.d/10-mail.conf
+RUN echo "postmaster_address=postmaster at %HOSTNAME%" >> /etc/dovecot/dovecot.conf
 
 RUN mkdir -p /var/mail/vhosts
 RUN groupadd -g 5000 vmail
