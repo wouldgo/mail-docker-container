@@ -3,7 +3,7 @@ MAINTAINER Dario Andrei <wouldgo84@gmail.com>
 
 RUN apt-get update && apt-get upgrade -y
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog postfix postfix-mysql dovecot-core dovecot-imapd dovecot-lmtpd dovecot-mysql
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog postfix postfix-mysql dovecot-core dovecot-imapd dovecot-lmtpd dovecot-mysql spamassassin spamc
 
 RUN cp /etc/postfix/main.cf /etc/postfix/main.cf.orig
 
@@ -29,7 +29,7 @@ RUN echo "smtpd_sasl_auth_enable = yes" >> /etc/postfix/main.cf
 RUN echo "smtpd_recipient_restrictions = permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination" >> /etc/postfix/main.cf
 
 RUN sed -i -re"s/mydestination.*/mydestination = localhost/g" /etc/postfix/main.cf
-RUN sed -i -re"s/myhostname.*/myhostname = %HOSTNAME%/g" /etc/postfix/main.cf
+RUN sed -i -re"s/^myhostname.*/myhostname = %HOSTNAME%/g" /etc/postfix/main.cf
 
 RUN echo "virtual_transport = lmtp:unix:private/dovecot-lmtp" >> /etc/postfix/main.cf
 RUN echo "virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-mailbox-domains.cf" >> /etc/postfix/main.cf
@@ -44,8 +44,8 @@ ADD confs/connect-line-dovecot-sql.conf.ext /tmp/connect-line-dovecot-sql.conf.e
 RUN sed -i -re"s/#submission inet n(\ )+-(\ )+-(\ )+-(\ )+-(\ )+smtpd/submission inet n       -       -       -       -       smtpd/g" /etc/postfix/master.cf
 RUN sed -i -re"s/#(\ )*-o\ syslog_name=postfix\/submission/ -o syslog_name=postfix\/submission/g" /etc/postfix/master.cf
 RUN sed -i -re"s/#(\ )*-o\ smtpd_tls_security_level=encrypt/ -o smtpd_tls_security_level=encrypt/g" /etc/postfix/master.cf
-RUN sed -i -re"s/#(\ )*-o\ smtpd_sasl_auth_enable=yes/ -o smtpd_sasl_auth_enable=yes/g" /etc/postfix/master.cf
-RUN sed -i -re"s/#(\ )*-o\ smtpd_client_restrictions=permit_sasl_authenticated,reject/ -o smtpd_client_restrictions=permit_sasl_authenticated,reject/g" /etc/postfix/master.cf
+RUN sed -i -re"s/#(\ )*-o\ smtpd_sasl_auth_enable=yes/ -o\ smtpd_sasl_auth_enable=yes/ ; ta ; b ; :a ; N ; ba" /etc/postfix/master.cf
+RUN sed -i -re"s/#(\ )*-o\ smtpd_client_restrictions=permit_sasl_authenticated,reject/ -o smtpd_client_restrictions=permit_sasl_authenticated,reject/ ; ta ; b ; :a ; N ; ba" /etc/postfix/master.cf
 
 RUN cp /etc/dovecot/dovecot.conf /etc/dovecot/dovecot.conf.orig
 RUN cp /etc/dovecot/conf.d/10-mail.conf /etc/dovecot/conf.d/10-mail.conf.orig
@@ -80,6 +80,17 @@ RUN chmod -R o-rwx /etc/dovecot
 ADD confs/etc.dovecot.conf.d.10-master.conf /etc/dovecot/conf.d/10-master.conf
 
 RUN sed -i -re"s/#ssl.*/ssl = required/g" /etc/dovecot/conf.d/10-ssl.conf && sed -i -re"s/ssl_cert.*/ssl_cert = <\/etc\/ssl\/certs\/dovecot.pem/g" /etc/dovecot/conf.d/10-ssl.conf && sed -i -re"s/ssl_key.*/ssl_key = <\/etc\/ssl\/private\/dovecot.pem/g" /etc/dovecot/conf.d/10-ssl.conf
+
+RUN adduser spamd --disabled-login
+RUN sed -i -re"s/ENABLED=0/ENABLED=1/g" /etc/default/spamassassin
+RUN sed -i -re"s/OPTIONS=.*/SPAMD_HOME=\"\/home\/spamd\/\"\r\nOPTIONS=\"--create-prefs --max-children 5 --username spamd --helper-home-dir $\{SPAMD_HOME\} -s $\{SPAMD_HOME\}spamd.log\"/g" /etc/default/spamassassin
+RUN sed -i -re"s/PIDFILE=.*/PIDFILE=\"$\{SPAMD_HOME\}spamd.pid\"/g" /etc/default/spamassassin
+RUN sed -i -re"s/CRON=0/CRON=1/g" /etc/default/spamassassin
+
+ADD confs/spamassassin-rules.conf /etc/spamassassin/local.cf
+
+RUN sed -i -re"s/smtp      inet  n       -       -       -       -       smtpd/smtp      inet  n       -       -       -       -       smtpd\r\n -o content_filter=spamassassin/g" /etc/postfix/master.cf
+RUN echo "spamassassin unix -     n       n       -       -       pipe" >> /etc/postfix/master.cf && echo "user=spamd argv=/usr/bin/spamc -f -e" >> /etc/postfix/master.cf && echo "/usr/sbin/sendmail -oi -f ${sender} ${recipient}" >> /etc/postfix/master.cf
 
 VOLUME ["/var/mail", "/var/log"]
 EXPOSE 25 587 993
