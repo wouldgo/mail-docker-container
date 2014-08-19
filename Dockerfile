@@ -95,4 +95,4 @@ RUN echo "spamassassin unix -     n       n       -       -       pipe" >> /etc/
 VOLUME ["/var/mail", "/var/log"]
 EXPOSE 25 587 993
 RUN ln -s /proc/mounts /etc/mtab
-CMD ["sh", "-c", "/etc/init.d/rsyslog start && service postfix restart && service dovecot restart && tail -f /var/log/mail.info" ]
+CMD ["sh", "-c", "/etc/init.d/rsyslog start && service spamassassin start && service postfix restart && service dovecot restart && tail -f /var/log/mail.info" ]
