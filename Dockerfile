@@ -36,11 +36,6 @@ RUN echo "virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-mailbox-dom
 RUN echo "virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf" >> /etc/postfix/main.cf
 RUN echo "virtual_alias_maps = mysql:/etc/postfix/mysql-virtual-alias-maps.cf" >> /etc/postfix/main.cf
 
-ADD confs/mysql-virtual-mailbox-domains.cf /etc/postfix/mysql-virtual-mailbox-domains.cf
-ADD confs/mysql-virtual-mailbox-maps.cf /etc/postfix/mysql-virtual-mailbox-maps.cf
-ADD confs/mysql-virtual-alias-maps.cf /etc/postfix/mysql-virtual-alias-maps.cf
-ADD confs/connect-line-dovecot-sql.conf.ext /tmp/connect-line-dovecot-sql.conf.ext
-
 RUN sed -i -re"s/#submission inet n(\ )+-(\ )+-(\ )+-(\ )+-(\ )+smtpd/submission inet n       -       -       -       -       smtpd/g" /etc/postfix/master.cf
 RUN sed -i -re"s/#(\ )*-o\ syslog_name=postfix\/submission/ -o syslog_name=postfix\/submission/g" /etc/postfix/master.cf
 RUN sed -i -re"s/#(\ )*-o\ smtpd_tls_security_level=encrypt/ -o smtpd_tls_security_level=encrypt/g" /etc/postfix/master.cf
@@ -65,6 +60,7 @@ RUN mkdir -p /var/mail/vhosts
 RUN groupadd -g 5000 vmail
 RUN useradd -g vmail -u 5000 vmail -d /var/mail
 RUN chown -Rv vmail:vmail /var/mail
+RUN chmod -Rv g+rwx /var/mail
 
 RUN sed -i -re"s/#disable_plaintext_auth\ =\ yes/disable_plaintext_auth = yes/g" /etc/dovecot/conf.d/10-auth.conf
 RUN sed -i -re"s/auth_mechanisms.*/auth_mechanisms = plain login/g" /etc/dovecot/conf.d/10-auth.conf
@@ -77,8 +73,6 @@ RUN sed -i -re"s/#driver.*/driver = mysql/g" /etc/dovecot/dovecot-sql.conf.ext &
 RUN chown -R vmail:dovecot /etc/dovecot
 RUN chmod -R o-rwx /etc/dovecot
 
-ADD confs/etc.dovecot.conf.d.10-master.conf /etc/dovecot/conf.d/10-master.conf
-
 RUN sed -i -re"s/#ssl.*/ssl = required/g" /etc/dovecot/conf.d/10-ssl.conf && sed -i -re"s/ssl_cert.*/ssl_cert = <\/etc\/ssl\/certs\/dovecot.pem/g" /etc/dovecot/conf.d/10-ssl.conf && sed -i -re"s/ssl_key.*/ssl_key = <\/etc\/ssl\/private\/dovecot.pem/g" /etc/dovecot/conf.d/10-ssl.conf
 
 RUN adduser spamd --disabled-login
@@ -86,6 +80,13 @@ RUN sed -i -re"s/ENABLED=0/ENABLED=1/g" /etc/default/spamassassin
 RUN sed -i -re"s/OPTIONS=.*/SPAMD_HOME=\"\/home\/spamd\/\"\r\nOPTIONS=\"--create-prefs --max-children 5 --username spamd --helper-home-dir $\{SPAMD_HOME\} -s $\{SPAMD_HOME\}spamd.log\"/g" /etc/default/spamassassin
 RUN sed -i -re"s/PIDFILE=.*/PIDFILE=\"$\{SPAMD_HOME\}spamd.pid\"/g" /etc/default/spamassassin
 RUN sed -i -re"s/CRON=0/CRON=1/g" /etc/default/spamassassin
+
+ADD confs/mysql-virtual-mailbox-domains.cf /etc/postfix/mysql-virtual-mailbox-domains.cf
+ADD confs/mysql-virtual-mailbox-maps.cf /etc/postfix/mysql-virtual-mailbox-maps.cf
+ADD confs/mysql-virtual-alias-maps.cf /etc/postfix/mysql-virtual-alias-maps.cf
+ADD confs/connect-line-dovecot-sql.conf.ext /tmp/connect-line-dovecot-sql.conf.ext
+
+ADD confs/etc.dovecot.conf.d.10-master.conf /etc/dovecot/conf.d/10-master.conf
 
 ADD confs/spamassassin-rules.conf /etc/spamassassin/local.cf
 
