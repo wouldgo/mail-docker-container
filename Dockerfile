@@ -90,7 +90,7 @@ RUN sed -i -re"s/CRON=0/CRON=1/g" /etc/default/spamassassin
 ADD confs/spamassassin-rules.conf /etc/spamassassin/local.cf
 
 RUN sed -i -re"s/smtp      inet  n       -       -       -       -       smtpd/smtp      inet  n       -       -       -       -       smtpd\r\n -o content_filter=spamassassin/g" /etc/postfix/master.cf
-RUN echo "spamassassin unix -     n       n       -       -       pipe" >> /etc/postfix/master.cf && echo "user=spamd argv=/usr/bin/spamc -f -e" >> /etc/postfix/master.cf && echo "/usr/sbin/sendmail -oi -f ${sender} ${recipient}" >> /etc/postfix/master.cf
+RUN echo "spamassassin unix -     n       n       -       -       pipe" >> /etc/postfix/master.cf && echo " user=spamd argv=/usr/bin/spamc -f -e" >> /etc/postfix/master.cf && echo " /usr/sbin/sendmail -oi -f \${sender} \${recipient}" >> /etc/postfix/master.cf
 
 VOLUME ["/var/mail", "/var/log"]
 EXPOSE 25 587 993
