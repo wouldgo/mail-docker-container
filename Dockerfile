@@ -3,7 +3,7 @@ MAINTAINER Dario Andrei <wouldgo84@gmail.com>
 
 RUN apt-get update && apt-get upgrade -y
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog postfix postfix-mysql dovecot-core dovecot-imapd dovecot-lmtpd dovecot-mysql spamassassin spamc
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog postfix postfix-mysql dovecot-core dovecot-imapd dovecot-lmtpd dovecot-mysql spamassassin spamc opendkim opendkim-tools
 
 RUN cp /etc/postfix/main.cf /etc/postfix/main.cf.orig
 
@@ -90,8 +90,20 @@ ADD confs/etc.dovecot.conf.d.10-master.conf /etc/dovecot/conf.d/10-master.conf
 
 ADD confs/spamassassin-rules.conf /etc/spamassassin/local.cf
 
+ADD confs/opendkim.conf /tmp/opendkim.conf
+
 RUN sed -i -re"s/smtp      inet  n       -       -       -       -       smtpd/smtp      inet  n       -       -       -       -       smtpd\r\n -o content_filter=spamassassin/g" /etc/postfix/master.cf
 RUN echo "spamassassin unix -     n       n       -       -       pipe" >> /etc/postfix/master.cf && echo " user=spamd argv=/usr/bin/spamc -f -e" >> /etc/postfix/master.cf && echo " /usr/sbin/sendmail -oi -f \${sender} \${recipient}" >> /etc/postfix/master.cf
+
+RUN cat /tmp/opendkim.conf >> /etc/opendkim.conf
+RUN echo 'SOCKET="inet:12301@localhost"' >> /etc/default/opendkim
+RUN echo 'milter_protocol = 2' >> /etc/postfix/main.cf
+RUN echo 'milter_default_action = accept' >> /etc/postfix/main.cf
+RUN echo 'smtpd_milters = inet:localhost:12301' >> /etc/postfix/main.cf
+RUN echo 'non_smtpd_milters = inet:localhost:12301' >> /etc/postfix/main.cf
+RUN mkdir -p /etc/opendkim/keys
+
+
 
 VOLUME ["/var/mail", "/var/log"]
 EXPOSE 25 587 993
