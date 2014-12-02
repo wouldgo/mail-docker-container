@@ -105,4 +105,4 @@ ADD confs/create_mysql_db.sql /tmp/create_mysql_db.sql
 VOLUME ["/var/mail", "/var/log"]
 EXPOSE 25 587 993
 RUN ln -s /proc/mounts /etc/mtab
-CMD ["sh", "-c", "/opt/boostrap.sh" ]
+CMD ["sh", "-c", "/opt/bootstrap.sh" ]

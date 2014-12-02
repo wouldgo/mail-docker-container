@@ -28,10 +28,10 @@ else
   -h mailer \
   -v $PWD/mail:/var/mail \
   -v $PWD/logs:/var/log \
-  -e "MAIL_HOST=$(echo $HOSTNAME)"
-  -e "USER=$(echo $ADMIN)"
-  -e "PSW=$(echo $PASSWORD)"
-  -e "MAIL_HOSTNAMES=$(echo $MAIL_HOSTNAMES)"
+  -e "MAIL_HOST=$(echo $HOSTNAME)" \
+  -e "USER=$(echo $ADMIN)" \
+  -e "PSW=$(echo $PASSWORD)" \
+  -e "MAIL_HOSTNAMES=$(echo $MAIL_HOSTNAMES)" \
   --link mysqld:db \
   -p 127.0.0.1:25:25 \
   -p 127.0.0.1:587:587 \
