@@ -18,6 +18,10 @@ else
   echo "Specify the admin password for sql server..." && \
   read -s PASSWORD && \
 
+  read -p "Specify the hostnames managed by this mail container [$HOSTNAME]: " MAIL_HOSTNAMES && \
+  MAIL_HOSTNAMES=${MAIL_HOSTNAMES:-$HOSTNAME} && \
+
+
   docker run \
   --name mailer \
   -d \
@@ -27,6 +31,7 @@ else
   -e "MAIL_HOST=$(echo $HOSTNAME)"
   -e "USER=$(echo $ADMIN)"
   -e "PSW=$(echo $PASSWORD)"
+  -e "MAIL_HOSTNAMES=$(echo $MAIL_HOSTNAMES)"
   --link mysqld:db \
   -p 127.0.0.1:25:25 \
   -p 127.0.0.1:587:587 \
