@@ -100,7 +100,7 @@ RUN echo 'non_smtpd_milters = inet:localhost:12301' >> /etc/postfix/main.cf
 RUN mkdir -p /etc/opendkim/keys
 
 RUN mkdir -p /opt/dkim-pub
-ADD run/bootstrap.sh /opt/boostrap.sh
+ADD run/bootstrap.sh /opt/bootstrap.sh
 ADD confs/create_mysql_db.sql /tmp/create_mysql_db.sql
 
 VOLUME ["/var/mail", "/var/log", "/opt/dkim-pub"]
