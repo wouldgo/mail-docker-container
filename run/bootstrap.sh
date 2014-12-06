@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MAIL_HOSTNAME = $MAIL_HOST
+MAIL_HOSTNAME=$MAIL_HOST
 MAILUSER_PSW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
 DB_IP=$DB_PORT_3306_TCP_ADDR
 SQL_USER=$USER
