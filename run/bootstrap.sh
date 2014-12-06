@@ -45,7 +45,10 @@ while IFS=';' read -ra HOST; do
     echo "*@$DOMAIN mail._domainkey.$DOMAIN" >> /etc/opendkim/SigningTable
 
     mkdir -p "/etc/opendkim/keys/$DOMAIN"
-    cd "/etc/opendkim/keys/$DOMAIN" && opendkim-genkey -s mail -d $(echo $DOMAIN) && chown opendkim:opendkim mail.private && echo "--- $DOMAIN DKIM Public Key ---" && cat mail.txt && echo "--- end for $DOMAIN ---"
+    cd "/etc/opendkim/keys/$DOMAIN" && \
+    opendkim-genkey -s mail -d $(echo $DOMAIN) && \
+    chown opendkim:opendkim mail.private && \
+    cat mail.txt >> /opt/dkim-pub/$DOMAIN
   done
 done <<< "$HOSTNAMES"
 
