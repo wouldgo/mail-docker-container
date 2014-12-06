@@ -65,7 +65,7 @@ RUN sed -i -re"s/auth_mechanisms.*/auth_mechanisms = plain login/g" /etc/dovecot
 RUN sed -i -re"s/\!include auth-system.conf.ext/#\!include auth-system.conf.ext/g" /etc/dovecot/conf.d/10-auth.conf
 RUN sed -i -re"s/#\!include auth-sql.conf.ext/\!include auth-sql.conf.ext/g" /etc/dovecot/conf.d/10-auth.conf
 
-ADD confs/connect-line-dovecot-sql.conf.ext /tmp/connect-line-dovecot-sql.conf.ext
+ADD ./confs/connect-line-dovecot-sql.conf.ext /tmp/connect-line-dovecot-sql.conf.ext
 RUN printf "passdb {\n  driver = sql\n  args = /etc/dovecot/dovecot-sql.conf.ext\n}\n\nuserdb {\n  driver = static\n  " > /etc/dovecot/conf.d/auth-sql.conf.ext && echo "args = uid=vmail gid=vmail home=/var/mail/vhosts/%d/%n" >> /etc/dovecot/conf.d/auth-sql.conf.ext && echo "}" >> /etc/dovecot/conf.d/auth-sql.conf.ext
 RUN sed -i -re"s/#driver.*/driver = mysql/g" /etc/dovecot/dovecot-sql.conf.ext && cat /tmp/connect-line-dovecot-sql.conf.ext >> /etc/dovecot/dovecot-sql.conf.ext && echo "" >> /etc/dovecot/dovecot-sql.conf.ext && echo "default_pass_scheme = SHA512-CRYPT" >> /etc/dovecot/dovecot-sql.conf.ext && echo "" >> /etc/dovecot/dovecot-sql.conf.ext && echo "password_query = SELECT email as user, password FROM virtual_users WHERE email='%u';" >> /etc/dovecot/dovecot-sql.conf.ext
 
@@ -80,17 +80,17 @@ RUN sed -i -re"s/OPTIONS=.*/SPAMD_HOME=\"\/home\/spamd\/\"\r\nOPTIONS=\"--create
 RUN sed -i -re"s/PIDFILE=.*/PIDFILE=\"$\{SPAMD_HOME\}spamd.pid\"/g" /etc/default/spamassassin
 RUN sed -i -re"s/CRON=0/CRON=1/g" /etc/default/spamassassin
 
-ADD confs/mysql-virtual-mailbox-domains.cf /etc/postfix/mysql-virtual-mailbox-domains.cf
-ADD confs/mysql-virtual-mailbox-maps.cf /etc/postfix/mysql-virtual-mailbox-maps.cf
-ADD confs/mysql-virtual-alias-maps.cf /etc/postfix/mysql-virtual-alias-maps.cf
+ADD ./confs/mysql-virtual-mailbox-domains.cf /etc/postfix/mysql-virtual-mailbox-domains.cf
+ADD ./confs/mysql-virtual-mailbox-maps.cf /etc/postfix/mysql-virtual-mailbox-maps.cf
+ADD ./confs/mysql-virtual-alias-maps.cf /etc/postfix/mysql-virtual-alias-maps.cf
 
-ADD confs/etc.dovecot.conf.d.10-master.conf /etc/dovecot/conf.d/10-master.conf
+ADD ./confs/etc.dovecot.conf.d.10-master.conf /etc/dovecot/conf.d/10-master.conf
 
-ADD confs/spamassassin-rules.conf /etc/spamassassin/local.cf
+ADD ./confs/spamassassin-rules.conf /etc/spamassassin/local.cf
 RUN sed -i -re"s/smtp      inet  n       -       -       -       -       smtpd/smtp      inet  n       -       -       -       -       smtpd\r\n -o content_filter=spamassassin/g" /etc/postfix/master.cf
 RUN echo "spamassassin unix -     n       n       -       -       pipe" >> /etc/postfix/master.cf && echo " user=spamd argv=/usr/bin/spamc -f -e" >> /etc/postfix/master.cf && echo " /usr/sbin/sendmail -oi -f \${sender} \${recipient}" >> /etc/postfix/master.cf
 
-ADD confs/opendkim.conf /tmp/opendkim.conf
+ADD ./confs/opendkim.conf /tmp/opendkim.conf
 RUN cat /tmp/opendkim.conf >> /etc/opendkim.conf
 RUN echo 'SOCKET="inet:12301@localhost"' >> /etc/default/opendkim
 RUN echo 'milter_protocol = 2' >> /etc/postfix/main.cf
@@ -100,10 +100,10 @@ RUN echo 'non_smtpd_milters = inet:localhost:12301' >> /etc/postfix/main.cf
 RUN mkdir -p /etc/opendkim/keys
 
 RUN mkdir -p /opt/dkim-pub
-ADD run/bootstrap.sh /opt/bootstrap.sh
-ADD confs/create_mysql_db.sql /tmp/create_mysql_db.sql
+ADD ./run/bootstrap.sh /opt/bootstrap.sh
+ADD ./confs/create_mysql_db.sql /tmp/create_mysql_db.sql
 
 VOLUME ["/var/mail", "/var/log", "/opt/dkim-pub"]
 EXPOSE 25 587 993
 RUN ln -s /proc/mounts /etc/mtab
-CMD ["sh", "-c", "/opt/bootstrap.sh" ]
+CMD ["/bin/bash", "/opt/bootstrap.sh" ]
