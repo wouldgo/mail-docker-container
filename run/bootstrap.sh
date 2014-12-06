@@ -52,6 +52,8 @@ while IFS=';' read -ra HOST; do
   done
 done <<< "$HOSTNAMES"
 
+chown -Rf vmail:vmail /opt/dkim-pub && \
+
 /etc/init.d/rsyslog start && \
 service spamassassin start && \
 service postfix restart && \

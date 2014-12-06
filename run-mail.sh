@@ -28,6 +28,7 @@ else
   -h mailer \
   -v $PWD/mail:/var/mail \
   -v $PWD/logs:/var/log \
+  -v $PWD/dkim:/opt/dkim-pub \
   -e "MAIL_HOST=$(echo $HOSTNAME)" \
   -e "USER=$(echo $ADMIN)" \
   -e "PSW=$(echo $PASSWORD)" \

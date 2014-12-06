@@ -16,8 +16,9 @@ else
 
   mkdir mail && \
   mkdir logs && \
+  mkdir dkim && \
 
-  chown -Rfv vmail:vmail logs/ mail/ && \
+  chown -Rfv vmail:vmail logs/ mail/ dkim/ && \
 
   docker build --tag wouldgo/mail .
 fi
