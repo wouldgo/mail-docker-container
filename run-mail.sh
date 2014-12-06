@@ -21,6 +21,7 @@ else
   read -p "Specify the hostnames managed by this mail container [$HOSTNAME]: " MAIL_HOSTNAMES && \
   MAIL_HOSTNAMES=${MAIL_HOSTNAMES:-$HOSTNAME} && \
 
+  echo "Hostname $HOSTNAME - SQL user $ADMIN - Mail hostnames $MAIL_HOSTNAMES" && \
 
   docker run \
   --name mailer \

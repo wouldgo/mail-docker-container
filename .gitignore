@@ -1,1 +1,4 @@
 confs/previous_dump.sql
+dkim/
+logs/
+mail/
