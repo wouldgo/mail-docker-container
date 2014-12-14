@@ -23,6 +23,10 @@ else
 
   echo "Hostname $HOSTNAME - SQL user $ADMIN - Mail hostnames $MAIL_HOSTNAMES" && \
 
+  mkdir mail && \
+  mkdir logs && \
+  mkdir dkim && \
+
   docker run \
   --name mailer \
   -d \
@@ -38,5 +42,7 @@ else
   -p 127.0.0.1:25:25 \
   -p 127.0.0.1:587:587 \
   -p 127.0.0.1:993:993 \
-  wouldgo/mail
+  wouldgo/mail && \
+
+  chown -Rfv vmail:vmail logs/ mail/ dkim/
 fi

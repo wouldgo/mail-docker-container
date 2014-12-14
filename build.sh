@@ -14,11 +14,5 @@ else
   --comment "mail docker container user" \
   vmail || { echo "User for mailer alredy present"; } && \
 
-  mkdir mail && \
-  mkdir logs && \
-  mkdir dkim && \
-
-  chown -Rfv vmail:vmail logs/ mail/ dkim/ && \
-
   docker build --tag wouldgo/mail .
 fi
