@@ -76,8 +76,8 @@ RUN sed -i -re"s/#ssl.*/ssl = required/g" /etc/dovecot/conf.d/10-ssl.conf && sed
 
 RUN adduser spamd --disabled-login
 RUN sed -i -re"s/ENABLED=0/ENABLED=1/g" /etc/default/spamassassin
-RUN sed -i -re"s/OPTIONS=.*/SPAMD_HOME=\"\/home\/spamd\/\"\r\nOPTIONS=\"--create-prefs --max-children 5 --username spamd --helper-home-dir $\{SPAMD_HOME\} -s $\{SPAMD_HOME\}spamd.log\"/g" /etc/default/spamassassin
-RUN sed -i -re"s/PIDFILE=.*/PIDFILE=\"$\{SPAMD_HOME\}spamd.pid\"/g" /etc/default/spamassassin
+RUN sed -i -re"s/OPTIONS=.*/OPTIONS=\"--create-prefs --max-children 5 --username spamd --helper-home-dir \/home\/spamd\/ -s \/home\/spamd\/spamd.log\"/g" /etc/default/spamassassin
+RUN sed -i -re"s/PIDFILE=.*/PIDFILE=\"\/home\/spamd\/spamd.pid\"/g" /etc/default/spamassassin
 RUN sed -i -re"s/CRON=0/CRON=1/g" /etc/default/spamassassin
 
 ADD ./confs/mysql-virtual-mailbox-domains.cf /etc/postfix/mysql-virtual-mailbox-domains.cf
@@ -99,11 +99,12 @@ RUN echo 'smtpd_milters = inet:localhost:12301' >> /etc/postfix/main.cf
 RUN echo 'non_smtpd_milters = inet:localhost:12301' >> /etc/postfix/main.cf
 RUN mkdir -p /etc/opendkim/keys
 
-RUN mkdir -p /opt/dkim-pub
 ADD ./run/bootstrap.sh /opt/bootstrap.sh
+ADD ./run/opendkim.sh /opt/opendkim.sh
 ADD ./confs/create_mysql_db.sql /tmp/create_mysql_db.sql
+RUN mkdir -p /opt/dkim-pub && chmod a+x /opt/opendkim.sh
 
 VOLUME ["/var/mail", "/var/log", "/opt/dkim-pub"]
 EXPOSE 25 587 993
-RUN ln -s /proc/mounts /etc/mtab
+
 CMD ["/bin/bash", "/opt/bootstrap.sh" ]

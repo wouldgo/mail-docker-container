@@ -1,48 +1,36 @@
 #!/bin/bash
 
-PWD=$(pwd)
+DEFAULT_HOSTNAME=$(hostname) && \
+read -p "Specify the machine hostname [$DEFAULT_HOSTNAME]: " HOSTNAME && \
+HOSTNAME=${HOSTNAME:-$DEFAULT_HOSTNAME} && \
 
-if [[ $EUID -ne 0 ]]; then
+echo "Specify the admin password for sql server..." && \
+read -s PASSWORD && \
 
-  echo "You must be a root user" 2>&1
-  exit 1
-else
+read -p "Specify the hostnames managed by this mail container [$HOSTNAME]: " MAIL_HOSTNAMES && \
+MAIL_HOSTNAMES=${MAIL_HOSTNAMES:-$HOSTNAME} && \
 
-  DEFAULT_HOSTNAME=$(hostname) && \
-  read -p "Specify the machine hostname [$DEFAULT_HOSTNAME]: " HOSTNAME && \
-  HOSTNAME=${HOSTNAME:-$DEFAULT_HOSTNAME} && \
+echo "Hostname $HOSTNAME - SQL user $ADMIN - Mail hostnames $MAIL_HOSTNAMES" && \
 
-  echo "Specify the admin user for sql server..." && \
-  read ADMIN && \
+docker run \
+--name=mailer-data-only-container \
+-d \
+-h mailer-data-only-container \
+-v /var/mail \
+-v /var/log \
+-v /opt/dkim-pub \
+busybox sh -c 'echo mailer-data-only-container' && \
 
-  echo "Specify the admin password for sql server..." && \
-  read -s PASSWORD && \
-
-  read -p "Specify the hostnames managed by this mail container [$HOSTNAME]: " MAIL_HOSTNAMES && \
-  MAIL_HOSTNAMES=${MAIL_HOSTNAMES:-$HOSTNAME} && \
-
-  echo "Hostname $HOSTNAME - SQL user $ADMIN - Mail hostnames $MAIL_HOSTNAMES" && \
-
-  mkdir mail && \
-  mkdir logs && \
-  mkdir dkim && \
-
-  docker run \
-  --name mailer \
-  -d \
-  -h mailer \
-  -v $PWD/mail:/var/mail \
-  -v $PWD/logs:/var/log \
-  -v $PWD/dkim:/opt/dkim-pub \
-  -e "MAIL_HOST=$(echo $HOSTNAME)" \
-  -e "USER=$(echo $ADMIN)" \
-  -e "PSW=$(echo $PASSWORD)" \
-  -e "MAIL_HOSTNAMES=$(echo $MAIL_HOSTNAMES)" \
-  --link mysqld:db \
-  -p 127.0.0.1:25:25 \
-  -p 127.0.0.1:587:587 \
-  -p 127.0.0.1:993:993 \
-  wouldgo/mail && \
-
-  chown -Rfv vmail:vmail logs/ mail/ dkim/
-fi
+docker run \
+--name mailer \
+-d \
+-h mailer \
+--volumes-from=mailer-data-only-container \
+-e "HOSTNAME=$(echo $HOSTNAME)" \
+-e "PASSWORD=$(echo $PASSWORD)" \
+-e "MAIL_HOSTNAMES=$(echo $MAIL_HOSTNAMES)" \
+--link mysqld:db \
+-p 127.0.0.1:25:25 \
+-p 127.0.0.1:587:587 \
+-p 127.0.0.1:993:993 \
+wouldgo/mail
