@@ -1,4 +1,4 @@
-FROM debian
+FROM debian:wheezy
 MAINTAINER Dario Andrei <wouldgo84@gmail.com>
 
 RUN apt-get update && apt-get upgrade -y
