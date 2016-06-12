@@ -20,6 +20,9 @@ sed -i -re"s/%MYSQL_IP%/$DB_PORT_3306_TCP_ADDR/g" /etc/postfix/mysql-virtual-ali
 sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" /tmp/create_mysql_db.sql && \
 mysql -u root -p$(echo $PASSWORD) -h $DB_PORT_3306_TCP_ADDR < /tmp/create_mysql_db.sql && \
 
+sed -i -re"s/%MYSQL_IP%/$DB_PORT_3306_TCP_ADDR/g" /opt/web-management/lib/model/options/model.json && \
+sed -i -re"s/%MAILUSER_PSW%/$MAILUSER_PSW/g" /opt/web-management/lib/model/options/model.json && \
+
 touch /etc/opendkim/TrustedHosts && \
 touch /etc/opendkim/KeyTable && \
 touch /etc/opendkim/SigningTable && \

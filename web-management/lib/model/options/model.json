@@ -1,0 +1,7 @@
+{
+  "connectionLimit": 10,
+  "host" : "%MYSQL_IP%",
+  "user": "usermail",
+  "password": "%MAILUSER_PSW%",
+  "database": "servermail"
+}

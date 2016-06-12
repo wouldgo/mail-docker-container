@@ -1,0 +1,35 @@
+{
+  "name": "mail-docker-container",
+  "version": "1.0.0",
+  "description": "docker container for managing an email",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wouldgo/mail-docker-container.git"
+  },
+  "keywords": [
+    "docker",
+    "email"
+  ],
+  "author": "Dario Andrei <wouldgo84@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wouldgo/mail-docker-container/issues"
+  },
+  "homepage": "https://github.com/wouldgo/mail-docker-container#readme",
+  "dependencies": {
+    "good": "^7.0.1",
+    "good-console": "^6.1.2",
+    "good-squeeze": "^3.0.1",
+    "hapi": "^13.4.1",
+    "mysql": "^2.11.1"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-eslint": "^2.0.0",
+    "gulp-nodemon": "^2.1.0"
+  }
+}

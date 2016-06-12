@@ -2,3 +2,4 @@ confs/previous_dump.sql
 dkim/
 logs/
 mail/
+node_modules/

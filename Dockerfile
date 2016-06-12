@@ -104,6 +104,9 @@ ADD ./run/opendkim.sh /opt/opendkim.sh
 ADD ./confs/create_mysql_db.sql /tmp/create_mysql_db.sql
 RUN mkdir -p /opt/dkim-pub && chmod a+x /opt/opendkim.sh
 
+RUN mkdir -p /opt/web-management
+ADD ./web-management /opt/web-management
+
 VOLUME ["/var/mail", "/var/log", "/opt/dkim-pub"]
 EXPOSE 25 587 993
 
