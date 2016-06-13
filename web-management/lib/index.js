@@ -1,7 +1,8 @@
-/*global require,module*/
+/*global __dirname,require,module*/
 (function withNode() {
   'use strict';
   const hapi = require('hapi')
+    , path = require('path')
     //, model = require('./model')
     , server = new hapi.Server();
 
@@ -11,6 +12,7 @@
   });
 
   server.register([
+    require('inert'),
     {
       'register': require('good'),
       'options': {
@@ -44,6 +46,18 @@
       throw err;
     }
   });
+
+  server.route({
+    'method': 'GET',
+    'path': '/management/{param*}',
+    'handler': {
+      'directory': {
+        'path': path.resolve(__dirname, 'views')
+      }
+    }
+  });
+
+  require('./endpoints')(server);
 
   module.exports = server;
 }());
