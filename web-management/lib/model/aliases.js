@@ -44,7 +44,7 @@
         return reject();
       });
     }),
-    'all': (limit, offset) => new Promise((resolve, reject) => {
+    'all': (limit = 200, offset = 0) => new Promise((resolve, reject) => {
 
       connection.query('SELECT COUNT(id) as \'aliases\' FROM virtual_aliases', (countErr, countRows) => {
 

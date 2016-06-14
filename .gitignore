@@ -3,3 +3,4 @@ dkim/
 logs/
 mail/
 node_modules/
+npm-debug.log

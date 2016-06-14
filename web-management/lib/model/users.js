@@ -44,7 +44,7 @@
         return reject();
       });
     }),
-    'all': (limit, offset) => new Promise((resolve, reject) => {
+    'all': (limit = 200, offset = 0) => new Promise((resolve, reject) => {
 
       connection.query('SELECT COUNT(id) as \'users\' FROM virtual_users', (countErr, countRows) => {
 

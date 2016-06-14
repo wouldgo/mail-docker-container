@@ -49,7 +49,7 @@
 
   server.route({
     'method': 'GET',
-    'path': '/management/{param*}',
+    'path': '/admin/{param*}',
     'handler': {
       'directory': {
         'path': path.resolve(__dirname, 'views')

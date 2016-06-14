@@ -61,7 +61,7 @@
         return reject();
       });
     }),
-    'all': (limit = 100, offset = 0) => new Promise((resolve, reject) => {
+    'all': (limit = 200, offset = 0) => new Promise((resolve, reject) => {
 
       connection.query('SELECT COUNT(id) as \'domains\' FROM virtual_domains', (countErr, countRows) => {
 
