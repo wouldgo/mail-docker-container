@@ -1,110 +1,130 @@
-FROM debian:wheezy
-MAINTAINER Dario Andrei <wouldgo84@gmail.com>
+FROM ubuntu:16.04
+LABEL maintainer "Dario Andrei <wouldgo84@gmail.com>"
+ARG POSTFIXADMIN_VERSION=3.0.2
+ENV POSTFIXADMIN_URL="http://downloads.sourceforge.net/project/postfixadmin/postfixadmin/postfixadmin-${POSTFIXADMIN_VERSION}/postfixadmin-${POSTFIXADMIN_VERSION}.tar.gz"
 
-RUN apt-get update && apt-get upgrade -y
+ADD nginx/postfix-admin.conf /tmp/postfix-admin.conf
+ADD dovecot/etc/dovecot/dovecot-sql.conf.ext /etc/dovecot/dovecot-sql.conf.ext
+ADD dovecot/etc/dovecot/conf.d/10-master.conf /etc/dovecot/conf.d/10-master.conf
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog mysql-client postfix postfix-mysql dovecot-core dovecot-imapd dovecot-lmtpd dovecot-mysql spamassassin spamc opendkim opendkim-tools
+RUN apt-get update
 
-RUN cp /etc/postfix/main.cf /etc/postfix/main.cf.orig
+RUN apt-get install -y \
+  wget \
+  dbconfig-common \
+  sqlite3 \
 
-RUN ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/certs/dovecot.pem
-RUN ln -s /etc/ssl/private/ssl-cert-snakeoil.key /etc/ssl/private/dovecot.pem
+  php-fpm \
+  php-cli \
+  php7.0-mbstring \
+  php7.0-imap \
+  php7.0-sqlite3 \
+  nginx
 
-RUN sed -i -re"s/smtpd_tls_cert_file=\/etc\/ssl\/certs\/ssl-cert-snakeoil.pem/#smtpd_tls_cert_file=\/etc\/ssl\/certs\/ssl-cert-snakeoil.pem/g" /etc/postfix/main.cf
-RUN sed -i -re"s/smtpd_tls_key_file=\/etc\/ssl\/private\/ssl-cert-snakeoil.key/#smtpd_tls_key_file=\/etc\/ssl\/private\/ssl-cert-snakeoil.key/g" /etc/postfix/main.cf
-RUN sed -i -re"s/smtpd_use_tls=yes/#smtpd_use_tls=yes/g" /etc/postfix/main.cf
-RUN sed -i -re"s/smtpd_tls_session_cache_database.*/#smtpd_tls_session_cache_database = btree:$\{data_directory\}\/smtpd_scache/g" /etc/postfix/main.cf
-RUN sed -i -re"s/smtp_tls_session_cache_database.*/#smtp_tls_session_cache_database = btree:$\{data_directory\}\/smtp_scache/g" /etc/postfix/main.cf
+RUN useradd -r -u 150 -g mail -d /var/vmail -s /sbin/nologin \
+    -c "Virtual Mail User" vmail \
+  && mkdir -p /var/vmail \
+  && chmod -R 770 /var/vmail \
+  && chown -R vmail:mail /var/vmail
 
-RUN echo "" >> /etc/postfix/main.cf
-RUN echo "#Container configurations" >> /etc/postfix/main.cf
-RUN echo "smtpd_tls_cert_file=/etc/ssl/certs/dovecot.pem" >> /etc/postfix/main.cf
-RUN echo "smtpd_tls_key_file=/etc/ssl/private/dovecot.pem" >> /etc/postfix/main.cf
-RUN echo "smtpd_use_tls=yes" >> /etc/postfix/main.cf
-RUN echo "smtpd_tls_auth_only = yes" >> /etc/postfix/main.cf
+RUN sed -i -re"s/postfixadmin-[$]\{POSTFIXADMIN_VERSION\}/postfixadmin-${POSTFIXADMIN_VERSION}/g" /tmp/postfix-admin.conf \
+  && cp /tmp/postfix-admin.conf /etc/nginx/sites-available/postfix-admin.conf \
+  && ln -s /etc/nginx/sites-available/postfix-admin.conf /etc/nginx/sites-enabled/postfix-admin.conf \
+  && rm -Rfv /etc/nginx/sites-enabled/default \
+  && nginx -t
 
-RUN echo "smtpd_sasl_type = dovecot" >> /etc/postfix/main.cf
-RUN echo "smtpd_sasl_path = private/auth" >> /etc/postfix/main.cf
-RUN echo "smtpd_sasl_auth_enable = yes" >> /etc/postfix/main.cf
-RUN echo "smtpd_recipient_restrictions = permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination" >> /etc/postfix/main.cf
+RUN wget -q -O - ${POSTFIXADMIN_URL} | tar -xzf - -C /var/www \
+  && echo "/var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php" \
+  && sed -i -re"s/^[$]CONF\['configured'.+/\$CONF['configured'] = true;/g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
+  && sed -i -re"s/^[$]CONF\['database_type'\].+/\$CONF['database_type'] = 'sqlite';/g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
+  && sed -i -re"s/^[$]CONF\['database_name'\].+/\$CONF['database_name'] = '\/var\/vmail\/postfixadmin.db';/g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
+  && sed -i -re"s/^[$]CONF\['domain_path'\].+/\$CONF['domain_path'] = 'NO';/g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
+  && sed -i -re"s/^[$]CONF\['domain_in_mailbox'\].+/\$CONF['domain_in_mailbox'] = 'YES';/g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
 
-RUN sed -i -re"s/mydestination.*/mydestination = localhost/g" /etc/postfix/main.cf
+  && sed -i -re"s/^[$]CONF\['database_host'\].+$//g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
+  && sed -i -re"s/^[$]CONF\['database_user'\].*$//g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
+  && sed -i -re"s/^[$]CONF\['database_password'\].*$//g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
+  && chown -R www-data:www-data /var/www/postfixadmin-${POSTFIXADMIN_VERSION}
 
-RUN echo "virtual_transport = lmtp:unix:private/dovecot-lmtp" >> /etc/postfix/main.cf
-RUN echo "virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-mailbox-domains.cf" >> /etc/postfix/main.cf
-RUN echo "virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf" >> /etc/postfix/main.cf
-RUN echo "virtual_alias_maps = mysql:/etc/postfix/mysql-virtual-alias-maps.cf" >> /etc/postfix/main.cf
+RUN touch /var/vmail/postfixadmin.db \
+  && chmod g+w /var/vmail/postfixadmin.db \
+  && chown vmail:mail /var/vmail/postfixadmin.db \
+  && usermod -a -G mail www-data
 
-RUN sed -i -re"s/#submission inet n(\ )+-(\ )+-(\ )+-(\ )+-(\ )+smtpd/submission inet n       -       -       -       -       smtpd/g" /etc/postfix/master.cf
-RUN sed -i -re"s/#(\ )*-o\ syslog_name=postfix\/submission/ -o syslog_name=postfix\/submission/g" /etc/postfix/master.cf
-RUN sed -i -re"s/#(\ )*-o\ smtpd_tls_security_level=encrypt/ -o smtpd_tls_security_level=encrypt/g" /etc/postfix/master.cf
-RUN sed -i -re"s/#(\ )*-o\ smtpd_sasl_auth_enable=yes/ -o\ smtpd_sasl_auth_enable=yes/ ; ta ; b ; :a ; N ; ba" /etc/postfix/master.cf
-RUN sed -i -re"s/#(\ )*-o\ smtpd_client_restrictions=permit_sasl_authenticated,reject/ -o smtpd_client_restrictions=permit_sasl_authenticated,reject/ ; ta ; b ; :a ; N ; ba" /etc/postfix/master.cf
+RUN apt-get install -y \
+  postfix
+RUN echo $"dbpath = /var/vmail/postfixadmin.db\n\
+query = SELECT goto FROM alias WHERE address='%s' AND active = '1'" > /etc/postfix/sqlite_virtual_alias_maps.cf \
+  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+query = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = '%d' and alias.address = printf('%u', '@', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active='1'" > /etc/postfix/sqlite_virtual_alias_domain_maps.cf \
+  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+query  = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = '%d' and alias.address = printf('@', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active='1'" > /etc/postfix/sqlite_virtual_alias_domain_catchall_maps.cf \
+  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+query = SELECT domain FROM domain WHERE domain='%s' AND active = '1'" > /etc/postfix/sqlite_virtual_domains_maps.cf \
+  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+query = SELECT maildir FROM mailbox WHERE username='%s' AND active = '1'" > /etc/postfix/sqlite_virtual_mailbox_maps.cf \
+  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+query = SELECT maildir FROM mailbox,alias_domain WHERE alias_domain.alias_domain = '%d' and mailbox.username = printf('%u', '@', alias_domain.target_domain) AND mailbox.active = 1 AND alias_domain.active='1'" > /etc/postfix/sqlite_virtual_alias_domain_mailbox_maps.cf
 
-RUN cp /etc/dovecot/dovecot.conf /etc/dovecot/dovecot.conf.orig
-RUN cp /etc/dovecot/conf.d/10-mail.conf /etc/dovecot/conf.d/10-mail.conf.orig
-RUN cp /etc/dovecot/conf.d/10-auth.conf /etc/dovecot/conf.d/10-auth.conf.orig
-RUN cp /etc/dovecot/dovecot-sql.conf.ext /etc/dovecot/dovecot-sql.conf.ext.orig
-RUN cp /etc/dovecot/conf.d/10-master.conf /etc/dovecot/conf.d/10-master.conf.orig
-RUN cp /etc/dovecot/conf.d/10-ssl.conf /etc/dovecot/conf.d/10-ssl.conf.orig
+RUN postconf -e "virtual_mailbox_domains = sqlite:/etc/postfix/sqlite_virtual_domains_maps.cf" \
+  && postconf -e "virtual_alias_maps =  sqlite:/etc/postfix/sqlite_virtual_alias_maps.cf, sqlite:/etc/postfix/sqlite_virtual_alias_domain_maps.cf, sqlite:/etc/postfix/sqlite_virtual_alias_domain_catchall_maps.cf" \
+  && postconf -e "virtual_mailbox_maps = sqlite:/etc/postfix/sqlite_virtual_mailbox_maps.cf, sqlite:/etc/postfix/sqlite_virtual_alias_domain_mailbox_maps.cf" \
 
-RUN echo "#Container configurations" >> /etc/dovecot/dovecot.conf
-RUN echo "protocols = imap lmtp" >> /etc/dovecot/dovecot.conf
+  && postconf -e "smtpd_tls_cert_file = /etc/ssl/certs/ssl-cert-snakeoil.pem" \
+  && postconf -e "smtpd_tls_key_file = /etc/ssl/private/ssl-cert-snakeoil.key" \
+  && postconf -e "smtpd_use_tls = yes" \
+  && postconf -e "smtpd_tls_auth_only = yes" \
 
-RUN sed -i -re"s/mail_location.*/mail_location = maildir:\/var\/mail\/vhosts\/%d\/%n/g" /etc/dovecot/conf.d/10-mail.conf
-RUN sed -i -re"s/#mail_privileged_group.*/mail_privileged_group = mail/g" /etc/dovecot/conf.d/10-mail.conf
+  && postconf -e "smtpd_sasl_type = dovecot" \
+  && postconf -e "smtpd_sasl_path = private/auth" \
+  && postconf -e "smtpd_sasl_auth_enable = yes" \
+  && postconf -e "smtpd_recipient_restrictions = permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination" \
 
-RUN mkdir -p /var/mail/vhosts
-RUN groupadd -g 5000 vmail
-RUN useradd -g vmail -u 5000 vmail -d /var/mail
-RUN chown -Rv vmail:vmail /var/mail
-RUN chmod -Rv g+rwx /var/mail
+  && postconf -e "mydestination = localhost" \
+  && postconf -e "mynetworks = 127.0.0.0/8" \
+  && postconf -e "inet_protocols = ipv4" \
 
-RUN sed -i -re"s/#disable_plaintext_auth\ =\ yes/disable_plaintext_auth = yes/g" /etc/dovecot/conf.d/10-auth.conf
-RUN sed -i -re"s/auth_mechanisms.*/auth_mechanisms = plain login/g" /etc/dovecot/conf.d/10-auth.conf
-RUN sed -i -re"s/\!include auth-system.conf.ext/#\!include auth-system.conf.ext/g" /etc/dovecot/conf.d/10-auth.conf
-RUN sed -i -re"s/#\!include auth-sql.conf.ext/\!include auth-sql.conf.ext/g" /etc/dovecot/conf.d/10-auth.conf
+  && postconf -e "virtual_transport = lmtp:unix:private/dovecot-lmtp" \
 
-ADD ./confs/connect-line-dovecot-sql.conf.ext /tmp/connect-line-dovecot-sql.conf.ext
-RUN printf "passdb {\n  driver = sql\n  args = /etc/dovecot/dovecot-sql.conf.ext\n}\n\nuserdb {\n  driver = static\n  " > /etc/dovecot/conf.d/auth-sql.conf.ext && echo "args = uid=vmail gid=vmail home=/var/mail/vhosts/%d/%n" >> /etc/dovecot/conf.d/auth-sql.conf.ext && echo "}" >> /etc/dovecot/conf.d/auth-sql.conf.ext
-RUN sed -i -re"s/#driver.*/driver = mysql/g" /etc/dovecot/dovecot-sql.conf.ext && cat /tmp/connect-line-dovecot-sql.conf.ext >> /etc/dovecot/dovecot-sql.conf.ext && echo "" >> /etc/dovecot/dovecot-sql.conf.ext && echo "default_pass_scheme = SHA512-CRYPT" >> /etc/dovecot/dovecot-sql.conf.ext && echo "" >> /etc/dovecot/dovecot-sql.conf.ext && echo "password_query = SELECT email as user, password FROM virtual_users WHERE email='%u';" >> /etc/dovecot/dovecot-sql.conf.ext
+  && postconf -e "compatibility_level=2"
+RUN sed -i -re "s/^#submission inet n.+$/submission inet n        -       y       -       -       smtpd/g" /etc/postfix/master.cf \
+  && sed -i -re "s/^#smtps\s+inet\s+n.+$/smtps      inet  n       -       y       -       -       smtpd/g" /etc/postfix/master.cf \
+  && sed -i -re "s/^#(\s+-o syslog_name=postfix\/.*)$/\1/g" /etc/postfix/master.cf \
+  && sed -i -re "s/^#(\s+-o smtpd_tls_security_level=encrypt.*)$/\1/g" /etc/postfix/master.cf \
+  && sed -i -re "s/^#(\s+-o smtpd_sasl_auth_enable=yes.*)$/\1/g" /etc/postfix/master.cf \
+  && sed -i -re "s/^#(\s+-o smtpd_client_restrictions=permit_sasl_authenticated,reject.*)$/\1/g" /etc/postfix/master.cf \
+  && sed -i -re "s/^#(\s+-o milter_macro_daemon_name=ORIGINATING.*)$/\1/g" /etc/postfix/master.cf
 
-RUN chown -R vmail:dovecot /etc/dovecot
-RUN chmod -R o-rwx /etc/dovecot
+RUN apt-get install -y \
+  dovecot-imapd \
+  dovecot-lmtpd \
+  dovecot-pop3d \
+  dovecot-sqlite
+RUN sed -i -re "s/^\s*mail_location\s*=.+$/mail_location = maildir:\/var\/vmail\/%d\/%n\nmail_privileged_group = mail\nmail_uid = vmail\nmail_gid = mail\nfirst_valid_uid = 150\nlast_valid_uid = 150/g" \
+    /etc/dovecot/conf.d/10-mail.conf \
+  && sed -i -re "s/^\s*auth_mechanisms.*/auth_mechanisms = plain login/g" \
+    /etc/dovecot/conf.d/10-auth.conf \
+  && sed -i -re "s/^(!include auth-system.conf.ext)$/#\1/g" \
+    /etc/dovecot/conf.d/10-auth.conf \
+  && sed -i -re "s/^#(!include auth-sql.conf.ext)$/\1/g" \
+    /etc/dovecot/conf.d/10-auth.conf
+RUN sed -i -re "s/^ssl = no$/ssl = yes/g" /etc/dovecot/conf.d/10-ssl.conf
+RUN sed -i -re "s/^#postmaster_address =.*$/postmaster_address = wouldgo84@gmail.com/g" /etc/dovecot/conf.d/15-lda.conf
+RUN chown -R vmail:dovecot /etc/dovecot \
+  && chmod -R o-rwx /etc/dovecot
 
-RUN sed -i -re"s/#ssl.*/ssl = required/g" /etc/dovecot/conf.d/10-ssl.conf && sed -i -re"s/ssl_cert.*/ssl_cert = <\/etc\/ssl\/certs\/dovecot.pem/g" /etc/dovecot/conf.d/10-ssl.conf && sed -i -re"s/ssl_key.*/ssl_key = <\/etc\/ssl\/private\/dovecot.pem/g" /etc/dovecot/conf.d/10-ssl.conf
+RUN apt-get install -y \
+    spamassassin \
+  && adduser spamd --disabled-login
 
-RUN adduser spamd --disabled-login
-RUN sed -i -re"s/ENABLED=0/ENABLED=1/g" /etc/default/spamassassin
-RUN sed -i -re"s/OPTIONS=.*/OPTIONS=\"--create-prefs --max-children 5 --username spamd --helper-home-dir \/home\/spamd\/ -s \/home\/spamd\/spamd.log\"/g" /etc/default/spamassassin
-RUN sed -i -re"s/PIDFILE=.*/PIDFILE=\"\/home\/spamd\/spamd.pid\"/g" /etc/default/spamassassin
-RUN sed -i -re"s/CRON=0/CRON=1/g" /etc/default/spamassassin
-
-ADD ./confs/mysql-virtual-mailbox-domains.cf /etc/postfix/mysql-virtual-mailbox-domains.cf
-ADD ./confs/mysql-virtual-mailbox-maps.cf /etc/postfix/mysql-virtual-mailbox-maps.cf
-ADD ./confs/mysql-virtual-alias-maps.cf /etc/postfix/mysql-virtual-alias-maps.cf
-
-ADD ./confs/etc.dovecot.conf.d.10-master.conf /etc/dovecot/conf.d/10-master.conf
-
-ADD ./confs/spamassassin-rules.conf /etc/spamassassin/local.cf
-RUN sed -i -re"s/smtp      inet  n       -       -       -       -       smtpd/smtp      inet  n       -       -       -       -       smtpd\r\n -o content_filter=spamassassin/g" /etc/postfix/master.cf
-RUN echo "spamassassin unix -     n       n       -       -       pipe" >> /etc/postfix/master.cf && echo " user=spamd argv=/usr/bin/spamc -f -e" >> /etc/postfix/master.cf && echo " /usr/sbin/sendmail -oi -f \${sender} \${recipient}" >> /etc/postfix/master.cf
-
-ADD ./confs/opendkim.conf /tmp/opendkim.conf
-RUN cat /tmp/opendkim.conf >> /etc/opendkim.conf
-RUN echo 'SOCKET="inet:12301@localhost"' >> /etc/default/opendkim
-RUN echo 'milter_protocol = 2' >> /etc/postfix/main.cf
-RUN echo 'milter_default_action = accept' >> /etc/postfix/main.cf
-RUN echo 'smtpd_milters = inet:localhost:12301' >> /etc/postfix/main.cf
-RUN echo 'non_smtpd_milters = inet:localhost:12301' >> /etc/postfix/main.cf
-RUN mkdir -p /etc/opendkim/keys
-
-ADD ./run/bootstrap.sh /opt/bootstrap.sh
-ADD ./run/opendkim.sh /opt/opendkim.sh
-ADD ./confs/create_mysql_db.sql /tmp/create_mysql_db.sql
-RUN mkdir -p /opt/dkim-pub && chmod a+x /opt/opendkim.sh
-
-VOLUME ["/var/mail", "/var/log", "/opt/dkim-pub"]
-EXPOSE 25 587 993
-
-CMD ["/bin/bash", "/opt/bootstrap.sh" ]
+RUN apt-get install -y vim less
+RUN sed -i -re "s/^ENABLED=0.*$/ENABLED=1/g" /etc/default/spamassassin \
+  && sed -i -re "s/^OPTIONS=\".+$/OPTIONS=\"--create-prefs --max-children 5 -d 127.0.0.1 --username spamd --helper-home-dir \/home\/spamd\/ -s \/home\/spamd\/spamd.log\"/g" /etc/default/spamassassin \
+  && sed -i -re "s/^PIDFILE=\".+$/PIDFILE=\"\/home\/spamd\/spamd.pid\"/g" /etc/default/spamassassin \
+  && sed -i -re "s/^CRON=0$/CRON=1/g" /etc/default/spamassassin \
+  && sed -i -re "s/^\s*smtp\s+inet\s+n.+$/smtp       inet  n       -       -       -       -       smtpd\n  -o content_filter=spamassassin/g" /etc/postfix/master.cf \
+  && head -n -1 /etc/postfix/master.cf > /tmp/postfix_master.cf \
+  && mv /tmp/postfix_master.cf /etc/postfix/master.cf \
+  && echo "spamassassin unix  -       n       n       -       -       pipe\n\
+   user=nobody argv=/usr/bin/spamc -f -e /usr/sbin/sendmail -oi -f \${sender} \${recipient}\n\
+" >> /etc/postfix/master.cf

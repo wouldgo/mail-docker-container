@@ -1,5 +1,29 @@
 #!/bin/bash
 
+postconf -e "myhostname = $(hostname -A)"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 MAILUSER_PSW=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
 
 echo "Starting mail container for $HOSTNAME using database at $DB_PORT_3306_TCP_ADDR managing $MAIL_HOSTNAMES ..."
