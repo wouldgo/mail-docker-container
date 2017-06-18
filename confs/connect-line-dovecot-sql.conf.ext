@@ -1,1 +1,0 @@
-connect = host=%MYSQL_IP% dbname=servermail user=usermail password=%MAILUSER_PSW%

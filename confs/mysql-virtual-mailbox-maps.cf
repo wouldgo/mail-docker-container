@@ -1,5 +1,0 @@
-user = usermail
-password = %MAILUSER_PSW%
-hosts = %MYSQL_IP%
-dbname = servermail
-query = SELECT 1 FROM virtual_users WHERE email='%s'

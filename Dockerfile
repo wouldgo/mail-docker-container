@@ -4,12 +4,14 @@ ARG POSTFIXADMIN_VERSION=3.0.2
 ENV POSTFIXADMIN_URL="http://downloads.sourceforge.net/project/postfixadmin/postfixadmin/postfixadmin-${POSTFIXADMIN_VERSION}/postfixadmin-${POSTFIXADMIN_VERSION}.tar.gz"
 
 ADD nginx/postfix-admin.conf /tmp/postfix-admin.conf
-ADD dovecot/etc/dovecot/dovecot-sql.conf.ext /etc/dovecot/dovecot-sql.conf.ext
-ADD dovecot/etc/dovecot/conf.d/10-master.conf /etc/dovecot/conf.d/10-master.conf
+
+ADD run/bootstrap.sh /opt/bootstrap.sh
+ADD run/opendkim.sh /opt/opendkim.sh
 
 RUN apt-get update
 
 RUN apt-get install -y \
+  rsyslog \
   wget \
   dbconfig-common \
   sqlite3 \
@@ -100,6 +102,8 @@ RUN apt-get install -y \
   dovecot-lmtpd \
   dovecot-pop3d \
   dovecot-sqlite
+ADD dovecot/etc/dovecot/dovecot-sql.conf.ext /etc/dovecot/dovecot-sql.conf.ext
+ADD dovecot/etc/dovecot/conf.d/10-master.conf /etc/dovecot/conf.d/10-master.conf
 RUN sed -i -re "s/^\s*mail_location\s*=.+$/mail_location = maildir:\/var\/vmail\/%d\/%n\nmail_privileged_group = mail\nmail_uid = vmail\nmail_gid = mail\nfirst_valid_uid = 150\nlast_valid_uid = 150/g" \
     /etc/dovecot/conf.d/10-mail.conf \
   && sed -i -re "s/^\s*auth_mechanisms.*/auth_mechanisms = plain login/g" \
@@ -115,9 +119,9 @@ RUN chown -R vmail:dovecot /etc/dovecot \
 
 RUN apt-get install -y \
     spamassassin \
+    spamc \
   && adduser spamd --disabled-login
-
-RUN apt-get install -y vim less
+ADD spamassassin/etc/spamassassin/local.cf /etc/spamassassin/local.cf
 RUN sed -i -re "s/^ENABLED=0.*$/ENABLED=1/g" /etc/default/spamassassin \
   && sed -i -re "s/^OPTIONS=\".+$/OPTIONS=\"--create-prefs --max-children 5 -d 127.0.0.1 --username spamd --helper-home-dir \/home\/spamd\/ -s \/home\/spamd\/spamd.log\"/g" /etc/default/spamassassin \
   && sed -i -re "s/^PIDFILE=\".+$/PIDFILE=\"\/home\/spamd\/spamd.pid\"/g" /etc/default/spamassassin \
@@ -126,5 +130,22 @@ RUN sed -i -re "s/^ENABLED=0.*$/ENABLED=1/g" /etc/default/spamassassin \
   && head -n -1 /etc/postfix/master.cf > /tmp/postfix_master.cf \
   && mv /tmp/postfix_master.cf /etc/postfix/master.cf \
   && echo "spamassassin unix  -       n       n       -       -       pipe\n\
-   user=nobody argv=/usr/bin/spamc -f -e /usr/sbin/sendmail -oi -f \${sender} \${recipient}\n\
+   user=spamd argv=/usr/bin/spamc -f -e /usr/sbin/sendmail -oi -f \${sender} \${recipient}\n\
 " >> /etc/postfix/master.cf
+
+RUN apt-get install -y \
+  opendkim \
+  opendkim-tools
+ADD opendkim/etc/opendkim.conf /etc/opendkim.conf
+RUN echo 'SOCKET="inet:12301@localhost"' >> /etc/default/opendkim \
+ && postconf -e "milter_protocol = 2" \
+ && postconf -e "milter_default_action = accept" \
+ && postconf -e "smtpd_milters = inet:localhost:12301" \
+ && postconf -e "non_smtpd_milters = inet:localhost:12301" \
+ && mkdir -p /etc/opendkim/keys \
+ && mkdir -p /opt/dkim-pub
+
+VOLUME ["/var/vmail", "/var/log", "/opt/dkim-pub"]
+EXPOSE 25 587 993
+RUN chmod u+x /opt/bootstrap.sh
+ENTRYPOINT ["/opt/bootstrap.sh"]

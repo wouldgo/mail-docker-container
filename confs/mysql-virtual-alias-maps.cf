@@ -1,5 +1,0 @@
-user = usermail
-password = %MAILUSER_PSW%
-hosts = %MYSQL_IP%
-dbname = servermail
-query = SELECT destination FROM virtual_aliases WHERE source='%s'
