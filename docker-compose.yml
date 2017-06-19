@@ -1,0 +1,24 @@
+version: '2'
+services:
+  mail-data-container:
+    image: busybox
+    container_name: mail-data-container
+    hostname: mail-data-container
+  mail:
+    image: wouldgo/mail
+    container_name: mail
+    hostname: 720kb.net
+    depends_on:
+      - mail-data-container
+    volumes_from:
+      - mail-data-container:rw
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        POSTFIXADMIN_VERSION: 3.0.2
+    #restart: on-failure
+    ports:
+      - "25:25"
+      - "587:587"
+      - "993:993"

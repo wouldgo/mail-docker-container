@@ -2,22 +2,22 @@
 
 echo "Starting mail container for $(hostname -A)..." \
   && postconf -e "myhostname = $(hostname -A)" \
-  && echo "postmaster_address=postmaster at $(hostname -A)" >> /etc/dovecot/dovecot.conf \
+  && echo "postmaster_address=postmaster at $(hostname -A)" >> /etc/dovecot/dovecot.conf
 
-  && touch /etc/opendkim/TrustedHosts \
+  touch /etc/opendkim/TrustedHosts \
   && touch /etc/opendkim/KeyTable \
-  && touch /etc/opendkim/SigningTable \
+  && touch /etc/opendkim/SigningTable
 
-  && echo "127.0.0.1" >> /etc/opendkim/TrustedHosts \
+  echo "127.0.0.1" >> /etc/opendkim/TrustedHosts \
   && echo "localhost" >> /etc/opendkim/TrustedHosts \
   && echo "192.168.0.1/24" >> /etc/opendkim/TrustedHosts \
-  && chown -Rf vmail:vmail /opt/dkim-pub \
+  && chown -Rf vmail:vmail /opt/dkim-pub
 
-  && /etc/init.d/rsyslog start \
+  /etc/init.d/rsyslog start \
   && service spamassassin start \
   && service postfix start \
   && service dovecot start \
-  && service opendkim restart \
+  && service opendkim start \
   && service php7.0-fpm start \
   && service nginx start \
-  tail -f /var/log/mail.info
+  && tail -f /var/log/mail.log
