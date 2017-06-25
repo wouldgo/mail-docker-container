@@ -1,17 +1,20 @@
 version: '2'
 services:
-  mail-data-container:
+  mail-data:
     image: busybox
-    container_name: mail-data-container
-    hostname: mail-data-container
+    container_name: mail-data
+    hostname: mail-data
+    volumes:
+      - /var/vmail
+      - /opt/dkim-pub
   mail:
     image: wouldgo/mail
     container_name: mail
     hostname: 720kb.net
     depends_on:
-      - mail-data-container
+      - mail-data
     volumes_from:
-      - mail-data-container:rw
+      - mail-data:rw
     build:
       context: .
       dockerfile: Dockerfile

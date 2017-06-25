@@ -146,6 +146,6 @@ RUN echo 'SOCKET="inet:12301@localhost"' >> /etc/default/opendkim \
  && mkdir -p /opt/dkim-pub
 
 VOLUME ["/var/vmail", "/var/log", "/opt/dkim-pub"]
-EXPOSE 25 587 993
-RUN chmod u+x /opt/bootstrap.sh
+EXPOSE 25 587 993 80
+RUN chmod u+x /opt/bootstrap.sh /opt/opendkim.sh
 ENTRYPOINT ["/opt/bootstrap.sh"]
