@@ -1,27 +1,22 @@
 version: '2'
 services:
-  mail-data:
-    image: busybox
-    container_name: mail-data
-    hostname: mail-data
-    volumes:
-      - /var/vmail
-      - /opt/dkim-pub
   mail:
     image: wouldgo/mail
     container_name: mail
     hostname: 720kb.net
-    depends_on:
-      - mail-data
-    volumes_from:
-      - mail-data:rw
+    volumes:
+      - ./vmail:/var/vmail
+      - ./log:/var/log
+      - ./dkim:/opt/dkim-pub
     build:
       context: .
       dockerfile: Dockerfile
       args:
         POSTFIXADMIN_VERSION: 3.0.2
+        POSTFIXADMIN_ADMIN_PASSWORD: super_strong_password
     #restart: on-failure
     ports:
       - "25:25"
+      - "8080:80"
       - "587:587"
       - "993:993"

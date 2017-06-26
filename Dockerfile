@@ -1,7 +1,10 @@
 FROM ubuntu:16.04
 LABEL maintainer "Dario Andrei <wouldgo84@gmail.com>"
 ARG POSTFIXADMIN_VERSION=3.0.2
+ARG POSTFIXADMIN_ADMIN_PASSWORD=super_strong_password
 ENV POSTFIXADMIN_URL="http://downloads.sourceforge.net/project/postfixadmin/postfixadmin/postfixadmin-${POSTFIXADMIN_VERSION}/postfixadmin-${POSTFIXADMIN_VERSION}.tar.gz"
+ENV POSTFIXADMIN_VERSION_ENV="${POSTFIXADMIN_VERSION}"
+ENV POSTFIXADMIN_ADMIN_PASSWORD_ENV="${POSTFIXADMIN_ADMIN_PASSWORD}"
 
 ADD nginx/postfix-admin.conf /tmp/postfix-admin.conf
 
@@ -143,7 +146,17 @@ RUN echo 'SOCKET="inet:12301@localhost"' >> /etc/default/opendkim \
  && postconf -e "smtpd_milters = inet:localhost:12301" \
  && postconf -e "non_smtpd_milters = inet:localhost:12301" \
  && mkdir -p /etc/opendkim/keys \
- && mkdir -p /opt/dkim-pub
+ && mkdir -p /opt/dkim-pub \
+ && touch /etc/opendkim/TrustedHosts \
+ && touch /etc/opendkim/KeyTable \
+ && touch /etc/opendkim/SigningTable \
+ && echo "127.0.0.1" >> /etc/opendkim/TrustedHosts \
+ && echo "localhost" >> /etc/opendkim/TrustedHosts \
+ && echo "192.168.0.1/24" >> /etc/opendkim/TrustedHosts \
+ && chown -Rf vmail:mail /opt/dkim-pub
+
+RUN apt-get install -y \
+  lynx
 
 VOLUME ["/var/vmail", "/var/log", "/opt/dkim-pub"]
 EXPOSE 25 587 993 80

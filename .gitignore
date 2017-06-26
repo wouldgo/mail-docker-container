@@ -1,4 +1,3 @@
-confs/previous_dump.sql
+log/
 dkim/
-logs/
-mail/
+vmail/
