@@ -4,16 +4,15 @@ services:
     image: wouldgo/mail
     container_name: mail
     hostname: 720kb.net
-    volumes:
-      - ./vmail:/var/vmail
-      - ./log:/var/log
-      - ./dkim:/opt/dkim-pub
+    #volumes:
+    #  - ./vmail:/var/vmail
+    #  - ./dkim:/opt/dkim-pub
     build:
       context: .
       dockerfile: Dockerfile
       args:
         POSTFIXADMIN_VERSION: 3.0.2
-        POSTFIXADMIN_ADMIN_PASSWORD: super_strong_password
+        POSTFIXADMIN_ADMIN_PASSWORD: Super_strong_password12
     #restart: on-failure
     ports:
       - "25:25"

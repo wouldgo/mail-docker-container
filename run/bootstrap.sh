@@ -2,7 +2,7 @@
 
 echo "Starting mail container for $(hostname -A)..." \
   && postconf -e "myhostname = $(hostname -A)" \
-  && echo "postmaster_address=postmaster at $(hostname -A)" >> /etc/dovecot/dovecot.conf \
+  && echo "postmaster_address=postmaster at $(hostname -A)" >> /etc/dovecot/dovecot.conf
 
 service rsyslog start \
   && service spamassassin start \

@@ -30,7 +30,7 @@ RUN useradd -r -u 150 -g mail -d /var/vmail -s /sbin/nologin \
     -c "Virtual Mail User" vmail \
   && mkdir -p /var/vmail \
   && chmod -R 770 /var/vmail \
-  && chown -R vmail:mail /var/vmail
+  && chown -Rfv vmail:mail /var/vmail
 
 RUN sed -i -re"s/postfixadmin-[$]\{POSTFIXADMIN_VERSION\}/postfixadmin-${POSTFIXADMIN_VERSION}/g" /tmp/postfix-admin.conf \
   && cp /tmp/postfix-admin.conf /etc/nginx/sites-available/postfix-admin.conf \
@@ -49,11 +49,11 @@ RUN wget -q -O - ${POSTFIXADMIN_URL} | tar -xzf - -C /var/www \
   && sed -i -re"s/^[$]CONF\['database_host'\].+$//g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
   && sed -i -re"s/^[$]CONF\['database_user'\].*$//g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
   && sed -i -re"s/^[$]CONF\['database_password'\].*$//g" /var/www/postfixadmin-${POSTFIXADMIN_VERSION}/config.inc.php \
-  && chown -R www-data:www-data /var/www/postfixadmin-${POSTFIXADMIN_VERSION}
+  && chown -Rfv www-data:www-data /var/www/postfixadmin-${POSTFIXADMIN_VERSION}
 
 RUN touch /var/vmail/postfixadmin.db \
   && chmod g+w /var/vmail/postfixadmin.db \
-  && chown vmail:mail /var/vmail/postfixadmin.db \
+  && chown -Rfv vmail:mail /var/vmail/postfixadmin.db \
   && usermod -a -G mail www-data
 
 RUN apt-get install -y \
@@ -117,7 +117,7 @@ RUN sed -i -re "s/^\s*mail_location\s*=.+$/mail_location = maildir:\/var\/vmail\
     /etc/dovecot/conf.d/10-auth.conf
 RUN sed -i -re "s/^ssl = no$/ssl = yes/g" /etc/dovecot/conf.d/10-ssl.conf
 RUN sed -i -re "s/^#postmaster_address =.*$/postmaster_address = wouldgo84@gmail.com/g" /etc/dovecot/conf.d/15-lda.conf
-RUN chown -R vmail:dovecot /etc/dovecot \
+RUN chown -Rvf vmail:dovecot /etc/dovecot \
   && chmod -R o-rwx /etc/dovecot
 
 RUN apt-get install -y \
@@ -153,7 +153,7 @@ RUN echo 'SOCKET="inet:12301@localhost"' >> /etc/default/opendkim \
  && echo "127.0.0.1" >> /etc/opendkim/TrustedHosts \
  && echo "localhost" >> /etc/opendkim/TrustedHosts \
  && echo "192.168.0.1/24" >> /etc/opendkim/TrustedHosts \
- && chown -Rf vmail:mail /opt/dkim-pub
+ && chown -Rfv vmail:mail /opt/dkim-pub
 
 RUN apt-get install -y \
   lynx
