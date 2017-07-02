@@ -4,9 +4,9 @@ services:
     image: wouldgo/mail
     container_name: mail
     hostname: 720kb.net
-    #volumes:
-    #  - ./vmail:/var/vmail
-    #  - ./dkim:/opt/dkim-pub
+    volumes:
+      - vmail-data:/var/vmail
+      - dkim-data:/opt/dkim-pub
     build:
       context: .
       dockerfile: Dockerfile
@@ -19,3 +19,8 @@ services:
       - "8080:80"
       - "587:587"
       - "993:993"
+volumes:
+  vmail-data:
+    driver: local
+  dkim-data:
+    driver: local
