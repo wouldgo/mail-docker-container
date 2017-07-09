@@ -58,17 +58,17 @@ RUN touch /var/vmail/postfixadmin.db \
 
 RUN apt-get install -y \
   postfix
-RUN echo $"dbpath = /var/vmail/postfixadmin.db\n\
+RUN echo "dbpath = /var/vmail/postfixadmin.db\n\
 query = SELECT goto FROM alias WHERE address='%s' AND active = '1'" > /etc/postfix/sqlite_virtual_alias_maps.cf \
-  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+  && echo "dbpath = /var/vmail/postfixadmin.db\n\
 query = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = '%d' and alias.address = printf('%u', '@', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active='1'" > /etc/postfix/sqlite_virtual_alias_domain_maps.cf \
-  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+  && echo "dbpath = /var/vmail/postfixadmin.db\n\
 query  = SELECT goto FROM alias,alias_domain WHERE alias_domain.alias_domain = '%d' and alias.address = printf('@', alias_domain.target_domain) AND alias.active = 1 AND alias_domain.active='1'" > /etc/postfix/sqlite_virtual_alias_domain_catchall_maps.cf \
-  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+  && echo "dbpath = /var/vmail/postfixadmin.db\n\
 query = SELECT domain FROM domain WHERE domain='%s' AND active = '1'" > /etc/postfix/sqlite_virtual_domains_maps.cf \
-  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+  && echo "dbpath = /var/vmail/postfixadmin.db\n\
 query = SELECT maildir FROM mailbox WHERE username='%s' AND active = '1'" > /etc/postfix/sqlite_virtual_mailbox_maps.cf \
-  && echo $"dbpath = /var/vmail/postfixadmin.db\n\
+  && echo "dbpath = /var/vmail/postfixadmin.db\n\
 query = SELECT maildir FROM mailbox,alias_domain WHERE alias_domain.alias_domain = '%d' and mailbox.username = printf('%u', '@', alias_domain.target_domain) AND mailbox.active = 1 AND alias_domain.active='1'" > /etc/postfix/sqlite_virtual_alias_domain_mailbox_maps.cf
 
 RUN postconf -e "virtual_mailbox_domains = sqlite:/etc/postfix/sqlite_virtual_domains_maps.cf" \

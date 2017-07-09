@@ -1,5 +1,5 @@
 driver = sqlite
-connect = /opt/postfixadmin.db
+connect = /var/vmail/postfixadmin.db
 default_pass_scheme = MD5-CRYPT
 password_query = \
   SELECT username as user, password, '/var/vmail/%d/%n' as userdb_home, \
