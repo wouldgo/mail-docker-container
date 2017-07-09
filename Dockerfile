@@ -89,7 +89,7 @@ RUN postconf -e "virtual_mailbox_domains = sqlite:/etc/postfix/sqlite_virtual_do
   && postconf -e "smtpd_recipient_restrictions = permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination" \
 
   && postconf -e "mydestination = localhost" \
-  && postconf -e "mynetworks = 127.0.0.0/8" \
+  && postconf -e "mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128" \
   && postconf -e "inet_protocols = ipv4" \
 
   && postconf -e "virtual_transport = lmtp:unix:private/dovecot-lmtp" \
