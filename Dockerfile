@@ -14,6 +14,9 @@ ADD run/opendkim.sh /opt/opendkim.sh
 RUN apt-get update
 
 RUN apt-get install -y \
+  ntp \
+  ntpdate \
+
   rsyslog \
   wget \
   dbconfig-common \
